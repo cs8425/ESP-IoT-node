@@ -3,29 +3,17 @@
 */
 
 #include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
 
 #include <time.h>                       // time() ctime()
 #include <sys/time.h>                   // struct timeval
 #include <coredecls.h>                  // settimeofday_cb()
 
-#include "micro-ecc/uECC.h"
+//#include "micro-ecc/uECC.h"
+#include "config.h"
 #include "util.hpp"
 #include "schedule.hpp"
 #include "sensor_log.hpp"
 
-////////////////////////////////////////////////////////
-
-#define SSIDAP          "esp"
-#define SSIDPWD         "Aa123454321aA"
-
-#define TZ              8       // (utc+) TZ in hours
-#define DST_MN          0      // use 60mn for summer time in some countries
-
-#define NTP0_OR_LOCAL1  0       // 0:use NTP  1:fake external RTC
-#define RTC_TEST     1510592825 // 1510592825 = Monday 13 November 2017 17:07:05 UTC
-
-////////////////////////////////////////////////////////
 
 #define TZ_MN           ((TZ)*60)
 #define TZ_SEC          ((TZ)*3600)
@@ -42,23 +30,16 @@ void time_is_set (void) {
 
 Log logs;
 
-ESP8266WiFiMulti wifiMulti;
-
 void setup() {
 	Serial.begin(115200);
 
 	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
 
-	configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
-	//WiFi.mode(WIFI_STA);
-	//WiFi.begin(SSIDAP, SSIDPWD);
+	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
 
 	WiFi.mode(WIFI_AP_STA);
-	wifiMulti.addAP("ssid_from_AP_1", "your_password_for_AP_1");
-	wifiMulti.addAP("ssid_from_AP_2", "your_password_for_AP_2");
-	//wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
-
-	WiFi.softAP(SSIDAP, SSIDPWD);
+	WiFi.begin(STA_SSID, STA_PWD);
+	WiFi.softAP(AP_SSID, AP_PWD);
 
 	// don't wait, observe time changing when ntp timestamp is received
 
@@ -66,17 +47,10 @@ void setup() {
 	settimeofday_cb(time_is_set);
 
 	// settime
-	ESP.eraseConfig();
 	time_t rtc = 1510592825; // 1510592825 = Monday 13 November 2017 17:07:05 UTC
 	timeval tv = { rtc, 0 };
 	timezone tz = { TZ_MN + DST_MN, 0 };
 	settimeofday(&tv, &tz);
-*/
-/*
-	if(wifiMulti.run() != WL_CONNECTED) {
-		Serial.println("WiFi not connected!");
-		delay(1000);
-	}
 */
 }
 

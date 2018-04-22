@@ -1,6 +1,18 @@
 
+/*
+#ifdef ESP8266
+extern "C" {
+#include "user_interface.h"
+}
+#endif
+*/
+
 // SDK get time from boot up
 extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
+
+// SDK random
+extern "C" unsigned long os_random(void);
+extern "C" int os_get_random(unsigned char *buf, size_t len);
 
 
 // CRC function used to ensure data validity
@@ -15,6 +27,9 @@ uint32_t calculateCRC32(const uint8_t *data, size_t length);
 struct rtcbackup {
 	timeval tv;
 	timezone tz;
+
+	uint64_t time_base;
+	uint32_t time_acc;
 };
 
 struct {
@@ -85,4 +100,21 @@ uint32_t calculateCRC32(const uint8_t *data, size_t length) {
 		Serial.println();
 	}
 */
+/*
 
+	if(need_init){
+		rtc_time.time_acc = 0;
+		rtc_time.time_base = system_get_rtc_time();
+	}
+
+
+//	uint32_t st1 = system_get_time();
+	uint32_t cal = system_rtc_clock_cali_proc();
+	uint32_t rtc_t2 = system_get_rtc_time();
+
+	rtc_time.time_acc += ((uint64_t)(rtc_t2 - rtc_time.time_base)) * ((uint64_t)( (cal*1000) >> 12 ) );
+	rtc_time.time_base = rtc_t2;
+
+	// do RTC write back
+
+*/
