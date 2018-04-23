@@ -1,12 +1,10 @@
 #ifndef __SCHEDLE_HPP_
 #define __SCHEDLE_HPP_
 
-#define MAX_MODE_COUNT 32
+#include <stdint.h>
+#include <time.h>
 
 struct mode {
-	// mode id
-	uint8_t mid;
-
 	// on time
 	unsigned int on : 12;
 
@@ -16,24 +14,15 @@ struct mode {
 
 class Mode {
 	public:
-		Mode(int pin);
-
-		//mode* ListMode();
-		uint8_t AddMode(uint16_t on, uint16_t off);
-		bool RemoveMode(uint8_t mid);
-		mode* GetMode();
-		uint8_t Count();
-
-		void SetMode(mode m);
-		void SetMode(uint8_t mid);
-
-		void Update();
+		Mode();
+		void SetMode(uint16_t on, uint16_t off, bool force_reload = true);
+		int Update(); // 0 >> off, 1 >> on, -1 >> don't change
 
 	private:
-		int _pin;
-		mode temp;
-		mode _m[MAX_MODE_COUNT];
+		uint8_t _status; // 0 >> dec on, 1 >> dec off
 
+		mode temp;
+		mode reload;
 };
 
 
@@ -43,52 +32,44 @@ struct daytime {
 	// week 0~6
 	unsigned int week : 3;
 
-	// hr 0~23
-	unsigned int hr : 5;
-
-	// min 0~60
-	unsigned int min : 6;
-
-	// sec 0~60
-	unsigned int sec : 6;
+	// seconds of day
+	unsigned int sec : 17;
 
 } __attribute__((packed));
 
 struct schedule {
-	// schedule id
-	uint16_t sid;
-
-	// mode id
-	uint8_t mid;
-
 	// start
 	daytime start;
 
 	// end
 	daytime end;
+
+	// mode
+	mode m;
 };
 
 class Scheduler {
 	public:
-		//Scheduler(uint16_t MaxSize = MAX_SCHEDLE_COUNT);
 		Scheduler();
 
-		//schedule* ListSchedule();
-		uint16_t AddSchedule(daytime a, daytime b, uint8_t mid);
-		bool RemoveSchedule(uint16_t sid);
-		schedule* GetSchedule();
+		int Add(daytime a, daytime b, uint16_t on, uint16_t off); // start with 0, -1 >> error
+		bool Del(uint16_t idx);
+		const schedule* Get(uint16_t idx);
 		uint16_t Count();
+		void Clear();
 
-		void SetDefaultMode(uint8_t mid);
-		void SetDefaultMode(uint8_t w, uint8_t mid);
+		void SetDefaultMode(uint16_t on, uint16_t off);
+		void SetDefaultMode(uint8_t w, uint16_t on, uint16_t off);
 
-		uint8_t Update(); // return mid
+		const mode* Update(time_t now); // return mode
 
+		//const schedule* GetD(uint16_t idx);
+		//void defragment(bool full = true, uint16_t idx = 0);
 	private:
-		uint16_t _maxsize;
+		void defragment(bool full = true, uint16_t idx = 0);
 		uint16_t _count;
 		schedule _sch[MAX_SCHEDLE_COUNT];
-		uint8_t _defM[7];
+		mode _defM[7];
 };
 
 
@@ -114,7 +95,7 @@ class Task {
 		//task_t* ListTask();
 		uint8_t AddTask(uint16_t delay, uint8_t mid);
 		bool RemoveTask(uint8_t tid);
-		task_t* GetTask();
+		const task_t* GetTask(uint8_t tid);
 		uint8_t Count();
 
 		uint8_t Update(); // return mid

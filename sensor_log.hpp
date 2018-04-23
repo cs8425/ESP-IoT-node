@@ -2,7 +2,6 @@
 #define __SENSOT_LOG_HPP_
 
 #include <stdint.h>
-#include <cstddef>
 
 // TODO: fix define MAX_LOG_COUNT not work for preallocated array
 #ifndef MAX_LOG_COUNT

@@ -33,7 +33,7 @@ uint16_t Log::Count() {
 
 log_t* Log::Get(uint16_t idx) {
 	if(idx >= Count()) {
-		return NULL;
+		return nullptr;
 	}
 
 	uint16_t id = tail + idx;

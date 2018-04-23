@@ -24,16 +24,18 @@
 #define TZ_SEC          ((TZ)*3600)
 #define DST_SEC         ((DST_MN)*60)
 
-timeval cbtime;			// time set in callback
 bool cbtime_set = false;
 
 void time_is_set (void) {
-	gettimeofday(&cbtime, NULL);
 	cbtime_set = true;
 	Serial.println("------------------ settimeofday() was called ------------------");
 }
 
+
 Log logs;
+
+Scheduler sch;
+Mode pin;
 
 AsyncWebServer server(80);
 //AsyncWebSocket ws("/ws");
@@ -45,6 +47,13 @@ void setup() {
 
 	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
 
+	// TODO: load from EEPROM
+	for(uint8_t i=0; i<7; i++){
+		sch.SetDefaultMode(i, i, i+1);
+	}
+
+	pin.SetMode(0, 600, true);
+
 	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
 	WiFi.mode(WIFI_AP_STA);
 	WiFi.begin(STA_SSID, STA_PWD);
@@ -52,6 +61,7 @@ void setup() {
 
 	// don't wait, observe time changing when ntp timestamp is received
 
+	settimeofday_cb(time_is_set);
 /*
 	settimeofday_cb(time_is_set);
 
@@ -84,7 +94,6 @@ void printTm (const char* what, const tm* tm) {
 	PTM(hour);  PTM(min);  PTM(sec);
 }
 
-timeval tv;
 timespec tp;
 time_t now;
 uint32_t now_ms, now_us;
@@ -92,27 +101,43 @@ uint32_t last_ms;
 
 void loop() {
 
-	gettimeofday(&tv, nullptr);
 	clock_gettime(0, &tp);
 	now = time(nullptr);
 	now_ms = millis();
 	now_us = micros();
 
-	// localtime / gmtime every second change
-	static time_t lastv = 0;
-	if (lastv != tv.tv_sec) {
-		lastv = tv.tv_sec;
+/*	if(now_ms - last_ms > 10000){
+		scan();
+		Serial.print(WiFi.status());
+		Serial.println();
+		last_ms = now_ms;
+	}*/
+
+	if(now_ms - last_ms > 1000){
+		Serial.print("cbtime_set = ");
+		Serial.println(cbtime_set);
+
+		const mode* m = sch.Update(now);
+		Serial.print("mode.on = ");
+		Serial.print(m->on);
+		Serial.print(", mode.off = ");
+		Serial.println(m->off);
+
+		Serial.print("wifi status: ");
+		Serial.print(WiFi.status());
+		Serial.print(", wifi SSID: ");
+		Serial.print(WiFi.SSID());
+		Serial.print(", IP Address: ");
+		Serial.println(WiFi.localIP());
+
+		Serial.print("Free heap:");
+		Serial.println(ESP.getFreeHeap(), DEC);
+		Serial.println();
+
 		Serial.println();
 		printTm("localtime", localtime(&now));
 		Serial.println();
 		printTm("gmtime   ", gmtime(&now));
-
-		// human readable
-		Serial.print(" ctime:(UTC+");
-		Serial.print((uint32_t)(TZ * 60 + DST_MN));
-		Serial.print("mn)");
-		Serial.print(ctime(&now));
-		Serial.println();
 
 		// time from boot
 		Serial.print("clock:");
@@ -121,18 +146,11 @@ void loop() {
 		Serial.print((uint32_t)tp.tv_nsec);
 		Serial.print("ns");
 		Serial.println();
-
-		Serial.print("Free heap:"); 
-		Serial.println(ESP.getFreeHeap(), DEC);
 		Serial.println();
+
 
 		logs.Add(tp.tv_sec, tp.tv_nsec);
-	}
 
-	if(now_ms - last_ms > 10000){
-		scan();
-		Serial.print(WiFi.status());
-		Serial.println();
 		last_ms = now_ms;
 	}
 
