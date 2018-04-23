@@ -34,6 +34,7 @@ class Scheduler {
 
 		int Add(daytime a, daytime b, uint16_t on, uint16_t off); // start with 0, -1 >> error
 		int Add(daytime a, daytime b, mode m); // start with 0, -1 >> error
+		bool Mod(uint16_t idx, daytime a, daytime b, mode m); // start with 0, -1 >> error
 		bool Del(uint16_t idx);
 		const schedule* Get(uint16_t idx);
 		uint16_t Count();
@@ -41,6 +42,7 @@ class Scheduler {
 
 		void SetDefaultMode(uint16_t on, uint16_t off);
 		void SetDefaultMode(uint8_t w, uint16_t on, uint16_t off);
+		const mode* GetDef(uint8_t w);
 
 		int Update(time_t now, mode* m); // return 1 >> change, 0 >> don't change
 		int Update(time_t now);

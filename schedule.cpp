@@ -43,6 +43,19 @@ int Scheduler::Add(daytime a, daytime b, mode m) {
 	return idx;
 }
 
+bool Scheduler::Mod(uint16_t idx, daytime a, daytime b, mode m) {
+	if (idx >= _count) {
+		return false;
+	}
+
+	_sch[idx].start = a;
+	_sch[idx].end = b;
+	_sch[idx].m.on = m.on;
+	_sch[idx].m.off = m.off;
+
+	return true;
+}
+
 bool Scheduler::Del(uint16_t idx) {
 	if (idx >= _count) {
 		return false;
@@ -120,6 +133,14 @@ const schedule* Scheduler::Get(uint16_t idx) {
 
 	return &_sch[idx];
 }*/
+
+const mode* Scheduler::GetDef(uint8_t w) {
+	if (w >= 7) {
+		return nullptr;
+	}
+
+	return &_defM[w];
+}
 
 void Scheduler::SetDefaultMode(uint16_t on, uint16_t off) {
 	unsigned i;

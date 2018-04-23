@@ -73,3 +73,23 @@ int Mode::Update() {
 	return -1;
 }
 
+int Mode::GetOutput() {
+	switch(_status) {
+	case 0:
+		if (temp.on == 0) {
+			return 0;
+		}
+		if (temp.off == 0) {
+			return 1;
+		}
+	break;
+
+
+	case 2:
+		return 0;
+	break;
+	}
+
+	return 1;
+}
+

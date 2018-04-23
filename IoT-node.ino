@@ -7,7 +7,6 @@
 #include <FS.h>
 
 #include <time.h>                       // time() ctime()
-#include <sys/time.h>                   // struct timeval
 #include <coredecls.h>                  // settimeofday_cb()
 
 #include <ESPAsyncTCP.h>
@@ -28,7 +27,7 @@ bool cbtime_set = false;
 
 void time_is_set (void) {
 	cbtime_set = true;
-	Serial.println("------------------ settimeofday() was called ------------------");
+	Serial.println("\n------------------ settimeofday() was called ------------------");
 }
 
 
@@ -38,7 +37,23 @@ Scheduler sch;
 Mode pin;
 
 AsyncWebServer server(80);
-//AsyncWebSocket ws("/ws");
+
+#define WERR(req) {\
+	req->send(500); \
+	return; }
+
+bool authCheck(AsyncWebServerRequest *req, String& val) {
+	if(!req->hasParam("key")) {
+		req->send(403);
+		return false;
+	}
+
+	String key = req->getParam("key")->value();
+	if (key != val) {
+		return false;
+	}
+	return true;
+}
 
 void setup() {
 	Serial.begin(115200);
@@ -62,18 +77,93 @@ void setup() {
 	// don't wait, observe time changing when ntp timestamp is received
 
 	settimeofday_cb(time_is_set);
-/*
-	// settime
-	time_t rtc = 1510592825; // 1510592825 = Monday 13 November 2017 17:07:05 UTC
-	timeval tv = { rtc, 0 };
-	timezone tz = { TZ_MN + DST_MN, 0 };
-	settimeofday(&tv, &tz);
-*/
+
 
 	SPIFFS.begin();
 
 	server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *req){
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));
+	});
+
+	server.on("/sch/ls", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		for(unsigned i = 0; i < 7; i++){
+			const mode* m = sch.GetDef(i);
+			res->printf("%u:%u,%u\n", i, m->on, m->off);
+		}
+
+		unsigned count = sch.Count();
+		for(unsigned i = 0; i < count; i++){
+			const schedule* data = sch.Get(i);
+			res->printf("%u,%u,%u,%u,%u\n", data->start.week, data->start.sec, data->end.sec, data->m.on, data->m.off);
+		}
+
+		req->send(res);
+	});
+
+	server.on("/sch/add", HTTP_GET, [](AsyncWebServerRequest *req){
+		int params = req->params();
+		if (params != 5) WERR(req);
+		if(!req->hasParam("w")) WERR(req);
+		if(!req->hasParam("as")) WERR(req);
+		if(!req->hasParam("bs")) WERR(req);
+		if(!req->hasParam("on")) WERR(req);
+		if(!req->hasParam("of")) WERR(req);
+
+		unsigned w = unsigned(req->getParam("w")->value().toInt());
+		unsigned as = unsigned(req->getParam("as")->value().toInt());
+		unsigned bs = unsigned(req->getParam("bs")->value().toInt());
+		unsigned on = unsigned(req->getParam("on")->value().toInt());
+		unsigned of = unsigned(req->getParam("of")->value().toInt());
+
+		int idx = sch.Add(daytime{w, as}, daytime{w, bs}, mode{on, of});
+		req->send(200, "text/plain", String(idx));
+	});
+
+	server.on("/sch/rm", HTTP_GET, [](AsyncWebServerRequest *req){
+		int params = req->params();
+		if (params != 1) WERR(req);
+		if(!req->hasParam("i")) WERR(req);
+
+		unsigned idx = unsigned(req->getParam("i")->value().toInt());
+		req->send(200, "text/plain", String(sch.Del(idx)));
+	});
+
+	server.on("/mode", HTTP_GET, [](AsyncWebServerRequest *req){
+		if(!req->hasParam("on")) WERR(req);
+		if(!req->hasParam("off")) WERR(req);
+
+		String on = req->getParam("on")->value();
+		String off = req->getParam("off")->value();
+		pin.SetMode(on.toInt(), off.toInt());
+
+		req->send(200, "text/plain", String(ESP.getFreeHeap()));
+	});
+
+	server.on("/log", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		unsigned count = logs.Count();
+		for(unsigned i = 0; i < count; i++){
+			const log_t* data = logs.Get(i);
+			res->printf("%u,%d,%d\n", i, data->temp, data->hum);
+		}
+
+		req->send(res);
+	});
+
+	// test return only
+	server.on("/test", HTTP_GET, [](AsyncWebServerRequest *req){
+		WERR(req);
+	});
+
+	// for debug
+	server.on("/out", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		unsigned count = sch.Count();
+		const mode* m = sch.GetOutput();
+		res->printf("sch: %u,%u,%u\n", count, m->on, m->off);
+		res->printf("pin: %u\n", pin.GetOutput());
+		req->send(res);
 	});
 
 	server.serveStatic("/", SPIFFS, "/web/").setDefaultFile("index.html");
@@ -92,14 +182,12 @@ void printTm (const char* what, const tm* tm) {
 	PTM(hour);  PTM(min);  PTM(sec);
 }
 
-timespec tp;
 time_t now;
 uint32_t now_ms, now_us;
 uint32_t last_ms;
 
 void loop() {
 
-	clock_gettime(0, &tp);
 	now = time(nullptr);
 	now_ms = millis();
 	now_us = micros();
@@ -112,8 +200,13 @@ void loop() {
 	}*/
 
 	if(now_ms - last_ms > 1000){
+		last_ms = now_ms;
+
 		Serial.print("cbtime_set = ");
 		Serial.println(cbtime_set);
+
+		Serial.print("now_ms = ");
+		Serial.println(now_ms);
 
 		int sid = sch.Update(now);
 		const mode* m = sch.GetOutput();
@@ -149,19 +242,8 @@ void loop() {
 		Serial.println();
 		printTm("gmtime   ", gmtime(&now));
 
-		// time from boot
-		Serial.print("clock:");
-		Serial.print((uint32_t)tp.tv_sec);
-		Serial.print("/");
-		Serial.print((uint32_t)tp.tv_nsec);
-		Serial.print("ns");
-		Serial.println();
-		Serial.println();
 
-
-		logs.Add(tp.tv_sec, tp.tv_nsec);
-
-		last_ms = now_ms;
+		logs.Add(ESP.getFreeHeap(), sid);
 	}
 
 }
