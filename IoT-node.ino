@@ -3,10 +3,15 @@
 */
 
 #include <ESP8266WiFi.h>
+#include <EEPROM.h>
+#include <FS.h>
 
 #include <time.h>                       // time() ctime()
 #include <sys/time.h>                   // struct timeval
 #include <coredecls.h>                  // settimeofday_cb()
+
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 
 //#include "micro-ecc/uECC.h"
 #include "config.h"
@@ -30,13 +35,17 @@ void time_is_set (void) {
 
 Log logs;
 
+AsyncWebServer server(80);
+//AsyncWebSocket ws("/ws");
+
 void setup() {
 	Serial.begin(115200);
 
-	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
+	EEPROM.begin(512);
 
 	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
 
+	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
 	WiFi.mode(WIFI_AP_STA);
 	WiFi.begin(STA_SSID, STA_PWD);
 	WiFi.softAP(AP_SSID, AP_PWD);
@@ -52,6 +61,15 @@ void setup() {
 	timezone tz = { TZ_MN + DST_MN, 0 };
 	settimeofday(&tv, &tz);
 */
+
+	SPIFFS.begin();
+
+	server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *req){
+		req->send(200, "text/plain", String(ESP.getFreeHeap()));
+	});
+
+	server.serveStatic("/", SPIFFS, "/web/").setDefaultFile("index.html");
+	server.begin();
 }
 
 
