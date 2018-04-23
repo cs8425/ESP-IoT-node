@@ -5,7 +5,7 @@
 
 // TODO: fix define MAX_LOG_COUNT not work for preallocated array
 #ifndef MAX_LOG_COUNT
-#define MAX_LOG_COUNT 60*24*3
+#define MAX_LOG_COUNT (60*24*3)
 #endif
 
 struct log_t {

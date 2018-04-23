@@ -52,7 +52,7 @@ void setup() {
 		sch.SetDefaultMode(i, i, i+1);
 	}
 
-	pin.SetMode(0, 600, true);
+	pin.SetMode(15, 10, true);
 
 	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
 	WiFi.mode(WIFI_AP_STA);
@@ -63,8 +63,6 @@ void setup() {
 
 	settimeofday_cb(time_is_set);
 /*
-	settimeofday_cb(time_is_set);
-
 	// settime
 	time_t rtc = 1510592825; // 1510592825 = Monday 13 November 2017 17:07:05 UTC
 	timeval tv = { rtc, 0 };
@@ -117,11 +115,23 @@ void loop() {
 		Serial.print("cbtime_set = ");
 		Serial.println(cbtime_set);
 
-		const mode* m = sch.Update(now);
-		Serial.print("mode.on = ");
+		int sid = sch.Update(now);
+		const mode* m = sch.GetOutput();
+		Serial.print("output update = ");
+		Serial.print(sid);
+		Serial.print(", mode.on = ");
 		Serial.print(m->on);
 		Serial.print(", mode.off = ");
 		Serial.println(m->off);
+
+		if (sid) {
+			Serial.println("force set output mode !");
+			pin.SetMode(m);
+		}
+
+		Serial.print("mode output = ");
+		Serial.println(pin.Update());
+
 
 		Serial.print("wifi status: ");
 		Serial.print(WiFi.status());
