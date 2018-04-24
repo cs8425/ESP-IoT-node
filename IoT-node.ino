@@ -18,6 +18,10 @@
 #include "schedule.hpp"
 #include "sensor_log.hpp"
 
+#include "web.hpp"
+
+//#define OUT_PIN D4
+#define OUT_PIN LED_BUILTIN // GPIO 2
 
 #define TZ_MN           ((TZ)*60)
 #define TZ_SEC          ((TZ)*3600)
@@ -38,23 +42,6 @@ Mode pin;
 
 AsyncWebServer server(80);
 
-#define WERR(req) {\
-	req->send(500); \
-	return; }
-
-bool authCheck(AsyncWebServerRequest *req, String& val) {
-	if(!req->hasParam("key")) {
-		req->send(403);
-		return false;
-	}
-
-	String key = req->getParam("key")->value();
-	if (key != val) {
-		return false;
-	}
-	return true;
-}
-
 void setup() {
 	Serial.begin(115200);
 
@@ -69,6 +56,8 @@ void setup() {
 
 	pin.SetMode(15, 10, true);
 
+	pinMode(OUT_PIN, OUTPUT);
+
 	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
 	WiFi.mode(WIFI_AP_STA);
 	WiFi.begin(STA_SSID, STA_PWD);
@@ -81,139 +70,11 @@ void setup() {
 
 	SPIFFS.begin();
 
+	setupServer(server);
+
 	server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *req){
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));
 	});
-
-	server.on("/sch/ls", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
-		for(unsigned i = 0; i < 7; i++){
-			const mode* m = sch.GetDef(i);
-			res->printf("%u:%u,%u\n", i, m->on, m->off);
-		}
-
-		unsigned count = sch.Count();
-		for(unsigned i = 0; i < count; i++){
-			const schedule* data = sch.Get(i);
-			res->printf("%u,%u,%u,%u,%u\n", data->start.week, data->start.sec, data->end.sec, data->m.on, data->m.off);
-		}
-
-		req->send(res);
-	});
-
-	server.on("/sch/add", HTTP_GET, [](AsyncWebServerRequest *req){
-		int params = req->params();
-		if (params != 5) WERR(req);
-		if(!req->hasParam("w")) WERR(req);
-		if(!req->hasParam("as")) WERR(req);
-		if(!req->hasParam("bs")) WERR(req);
-		if(!req->hasParam("on")) WERR(req);
-		if(!req->hasParam("of")) WERR(req);
-
-		unsigned w = unsigned(req->getParam("w")->value().toInt());
-		unsigned as = unsigned(req->getParam("as")->value().toInt());
-		unsigned bs = unsigned(req->getParam("bs")->value().toInt());
-		unsigned on = unsigned(req->getParam("on")->value().toInt());
-		unsigned of = unsigned(req->getParam("of")->value().toInt());
-
-		int idx = sch.Add(daytime{w, as}, daytime{w, bs}, mode{on, of});
-		req->send(200, "text/plain", String(idx));
-	});
-
-	server.on("/sch/rm", HTTP_GET, [](AsyncWebServerRequest *req){
-		int params = req->params();
-		if (params != 1) WERR(req);
-		if(!req->hasParam("i")) WERR(req);
-
-		unsigned idx = unsigned(req->getParam("i")->value().toInt());
-		req->send(200, "text/plain", String(sch.Del(idx)));
-	});
-
-	server.on("/mode", HTTP_GET, [](AsyncWebServerRequest *req){
-		if(!req->hasParam("on")) WERR(req);
-		if(!req->hasParam("off")) WERR(req);
-
-		String on = req->getParam("on")->value();
-		String off = req->getParam("off")->value();
-		pin.SetMode(on.toInt(), off.toInt());
-
-		req->send(200, "text/plain", String(ESP.getFreeHeap()));
-	});
-
-	server.on("/log", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [](AsyncResponseStreamChunked* res) -> size_t {
-			size_t ret = 0;
-			static uint16_t i = 0;
-			uint16_t count = logs.Count();
-
-			if(i < count){
-				const log_t* data = logs.Get(i);
-				ret = res->printf("%u,%d,%d\n", i, data->temp, data->hum);
-				i++;
-			} else {
-				Serial.print("count = ");
-				Serial.print(count);
-				Serial.print(", i = ");
-				Serial.print(i);
-				Serial.print(", res = ");
-				Serial.println((unsigned int)res, HEX);
-
-				i = 0;
-				res->end();
-			}
-			return ret;
-		});
-
-		res->printf("%u\n", 0);
-		req->send(res);
-		res->printf("%u\n", 1);
-	});
-
-	// TODO: fix data > ~6000 Byte
-	server.on("/log0", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
-		uint16_t count = logs.Count();
-		for(uint16_t i = 0; i < count; i++){
-			const log_t* data = logs.Get(i);
-			res->printf("%u,%d,%d\n", i, data->temp, data->hum);
-		}
-
-		req->send(res);
-	});
-
-	// test req & res method
-	server.on("/test", HTTP_GET, [](AsyncWebServerRequest *req){
-		WERR(req);
-	});
-
-	server.on("/test3", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncWebServerResponse *res = req->beginChunkedResponse("text/plain", [](AsyncWebServerResponse* res, uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-			UNUSED(index);
-			size_t ret = 0;
-			static uint16_t i = 0;
-			uint16_t count = logs.Count();
-
-			if(i < count){
-				const log_t* data = logs.Get(i);
-				ret = snprintf((char*)buffer, maxLen, "%u,%d,%d\n", i, data->temp, data->hum);
-				i++;
-			} else {
-				Serial.print("count = ");
-				Serial.print(count);
-				Serial.print(", i = ");
-				Serial.print(i);
-				Serial.print(", res = ");
-				Serial.println((unsigned int)res, HEX);
-
-				i = 0;
-				res->end();
-			}
-			return ret;
-		});
-
-		req->send(res);
-	});
-
 
 	// for debug
 	server.on("/out", HTTP_GET, [](AsyncWebServerRequest *req){
@@ -222,6 +83,66 @@ void setup() {
 		const mode* m = sch.GetOutput();
 		res->printf("sch: %u,%u,%u\n", count, m->on, m->off);
 		res->printf("pin: %u\n", pin.GetOutput());
+		req->send(res);
+	});
+
+	// test req & res method
+	server.on("/501", HTTP_GET, [](AsyncWebServerRequest *req){
+		WERRC(req, 501);
+	});
+
+	server.on("/401", HTTP_GET, [](AsyncWebServerRequest *req){
+		WERRC(req, 401);
+	});
+
+	server.on("/str", HTTP_GET, [](AsyncWebServerRequest *req){
+		String z = PARAM_GET_STR("z", "def text");
+		Serial.print("/str, parm['z'] = ");
+		Serial.println(z);
+		req->send(200, "text/plain", z);
+	});
+
+	server.on("/8", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("z");
+		int z = PARAM_GET_INT("z");
+		Serial.print("/8, parm['z'] = ");
+		Serial.println(z);
+		req->send(200, "text/plain", String(z));
+	});
+
+	server.on("/3", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECKC("x", 510);
+		PARAM_CHECKC("y", 511);
+		Serial.println("/3, have x & y");
+		req->send(200, "text/plain", "");
+	});
+
+	server.on("/test3", HTTP_GET, [](AsyncWebServerRequest *req){
+		uint16_t* i = new uint16_t(0);
+
+		AsyncWebServerResponse *res = req->beginChunkedResponse("text/plain", [i](AsyncWebServerResponse* res, uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+			UNUSED(index);
+			size_t ret = 0;
+			uint16_t count = logs.Count();
+
+			if(*i < count){
+				const log_t* data = logs.Get(*i);
+				ret = snprintf((char*)buffer, maxLen, "%u,%d,%d\n", *i, data->temp, data->hum);
+				*i += 1;
+			} else {
+				Serial.print("count = ");
+				Serial.print(count);
+				Serial.print(", i = ");
+				Serial.print(*i);
+				Serial.print(", res = ");
+				Serial.println((unsigned int)res, HEX);
+
+				delete i;
+				res->end();
+			}
+			return ret;
+		});
+
 		req->send(res);
 	});
 
@@ -283,7 +204,7 @@ void loop() {
 
 		int o = pin.Update();
 		if (o != -1) {
-			//digitalWrite(OUT_PIN, o);
+			digitalWrite(OUT_PIN, o);
 		}
 
 
@@ -339,4 +260,109 @@ void scan() {
 	Serial.println("");
 }
 
+void setupServer(AsyncWebServer& server) {
+
+	server.on("/sch/ls", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		for(unsigned i = 0; i < 7; i++){
+			const mode* m = sch.GetDef(i);
+			res->printf("%u:%u,%u\n", i, m->on, m->off);
+		}
+
+		unsigned count = sch.Count();
+		for(unsigned i = 0; i < count; i++){
+			const schedule* data = sch.Get(i);
+			res->printf("%u,%u,%u,%u,%u\n", data->start.week, data->start.sec, data->end.sec, data->m.on, data->m.off);
+		}
+
+		req->send(res);
+	});
+
+	server.on("/sch/add", HTTP_GET, [](AsyncWebServerRequest *req){
+		//int params = req->params();
+		//if (params != 5) WERR(req);
+		PARAM_CHECK("w");
+		PARAM_CHECK("as");
+		PARAM_CHECK("bs");
+		PARAM_CHECK("on");
+		PARAM_CHECK("of");
+
+		unsigned w = PARAM_GET_INT("w") - 1;
+		unsigned as = PARAM_GET_INT("as") - 1;
+		unsigned bs = PARAM_GET_INT("bs") - 1;
+		unsigned on = PARAM_GET_INT("on") - 1;
+		unsigned of = PARAM_GET_INT("of") - 1;
+
+		int idx = sch.Add(daytime{w, as}, daytime{w, bs}, mode{on, of});
+		req->send(200, "text/plain", String(idx));
+	});
+
+	server.on("/sch/mod", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("w");
+		PARAM_CHECK("as");
+		PARAM_CHECK("bs");
+		PARAM_CHECK("on");
+		PARAM_CHECK("of");
+
+		unsigned i = PARAM_GET_INT("i") - 1;
+		unsigned w = PARAM_GET_INT("w") - 1;
+		unsigned as = PARAM_GET_INT("as") - 1;
+		unsigned bs = PARAM_GET_INT("bs") - 1;
+		unsigned on = PARAM_GET_INT("on") - 1;
+		unsigned of = PARAM_GET_INT("of") - 1;
+
+		bool ret = sch.Mod(i, daytime{w, as}, daytime{w, bs}, mode{on, of});
+		req->send(200, "text/plain", String(ret));
+	});
+
+	server.on("/sch/rm", HTTP_GET, [](AsyncWebServerRequest *req){
+		int params = req->params();
+		if (params != 1) WERR(req);
+		if(!req->hasParam("i")) WERR(req);
+
+		unsigned idx = unsigned(req->getParam("i")->value().toInt());
+		req->send(200, "text/plain", String(sch.Del(idx)));
+	});
+
+	server.on("/mode", HTTP_GET, [](AsyncWebServerRequest *req){
+		if(!req->hasParam("on")) WERR(req);
+		if(!req->hasParam("off")) WERR(req);
+
+		String on = req->getParam("on")->value();
+		String off = req->getParam("off")->value();
+		pin.SetMode(on.toInt(), off.toInt());
+
+		req->send(200, "text/plain", String(ESP.getFreeHeap()));
+	});
+
+	server.on("/log", HTTP_GET, [](AsyncWebServerRequest *req){
+		uint16_t* i = new uint16_t(0);
+
+		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [i](AsyncResponseStreamChunked* res) -> size_t {
+			size_t ret = 0;
+			uint16_t count = logs.Count();
+
+			if(*i < count){
+				const log_t* data = logs.Get(*i);
+				ret = res->printf("%u,%d,%d\n", *i, data->temp, data->hum);
+				*i += 1;
+			} else {
+				Serial.print("count = ");
+				Serial.print(count);
+				Serial.print(", i = ");
+				Serial.print(*i);
+				Serial.print(", res = ");
+				Serial.println((unsigned int)res, HEX);
+
+				delete i;
+				res->end();
+			}
+			return ret;
+		});
+
+		res->printf("%u\n", logs.Count());
+		req->send(res);
+	});
+
+}
 

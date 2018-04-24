@@ -53,6 +53,11 @@ bool Scheduler::Mod(uint16_t idx, daytime a, daytime b, mode m) {
 	_sch[idx].m.on = m.on;
 	_sch[idx].m.off = m.off;
 
+	// trigger update
+	if (idx == _lastId) {
+		_lastId = -20;
+	}
+
 	return true;
 }
 

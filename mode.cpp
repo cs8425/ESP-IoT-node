@@ -38,7 +38,6 @@ int Mode::Update() {
 			_status = 1;
 			return 1;
 		}
-		temp.on -=1;
 		_status = 1;
 		return 1;
 	break;
