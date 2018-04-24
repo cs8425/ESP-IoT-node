@@ -140,8 +140,37 @@ void setup() {
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));
 	});
 
-	// TODO: fix data > ~6000 Byte
 	server.on("/log", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [](AsyncResponseStreamChunked* res) -> size_t {
+			size_t ret = 0;
+			static uint16_t i = 0;
+			uint16_t count = logs.Count();
+
+			if(i < count){
+				const log_t* data = logs.Get(i);
+				ret = res->printf("%u,%d,%d\n", i, data->temp, data->hum);
+				i++;
+			} else {
+				Serial.print("count = ");
+				Serial.print(count);
+				Serial.print(", i = ");
+				Serial.print(i);
+				Serial.print(", res = ");
+				Serial.println((unsigned int)res, HEX);
+
+				i = 0;
+				res->end();
+			}
+			return ret;
+		});
+
+		res->printf("%u\n", 0);
+		req->send(res);
+		res->printf("%u\n", 1);
+	});
+
+	// TODO: fix data > ~6000 Byte
+	server.on("/log0", HTTP_GET, [](AsyncWebServerRequest *req){
 		AsyncResponseStream *res = req->beginResponseStream("text/plain");
 		uint16_t count = logs.Count();
 		for(uint16_t i = 0; i < count; i++){
@@ -157,34 +186,6 @@ void setup() {
 		WERR(req);
 	});
 
-	// error output
-	server.on("/test2", HTTP_GET, [](AsyncWebServerRequest *req){
-		uint16_t i = 0;
-		AsyncWebServerResponse *res = req->beginChunkedResponse("text/plain", [&i](AsyncWebServerResponse* res, uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-			UNUSED(index);
-			size_t ret = 0;
-			uint16_t count = logs.Count();
-
-			Serial.print("count = ");
-			Serial.print(count);
-			Serial.print(", i = ");
-			Serial.print(i);
-			Serial.print(", res = ");
-			Serial.println((unsigned int)res, HEX);
-
-			if(i < count){
-				const log_t* data = logs.Get(i);
-				ret = snprintf((char*)buffer, maxLen, "%u,%d,%d\n", i, data->temp, data->hum);
-				i++;
-			} else {
-				res->end();
-			}
-			return ret;
-		});
-
-		req->send(res);
-	});
-
 	server.on("/test3", HTTP_GET, [](AsyncWebServerRequest *req){
 		AsyncWebServerResponse *res = req->beginChunkedResponse("text/plain", [](AsyncWebServerResponse* res, uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 			UNUSED(index);
@@ -192,18 +193,18 @@ void setup() {
 			static uint16_t i = 0;
 			uint16_t count = logs.Count();
 
-			Serial.print("count = ");
-			Serial.print(count);
-			Serial.print(", i = ");
-			Serial.print(i);
-			Serial.print(", res = ");
-			Serial.println((unsigned int)res, HEX);
-
 			if(i < count){
 				const log_t* data = logs.Get(i);
 				ret = snprintf((char*)buffer, maxLen, "%u,%d,%d\n", i, data->temp, data->hum);
 				i++;
 			} else {
+				Serial.print("count = ");
+				Serial.print(count);
+				Serial.print(", i = ");
+				Serial.print(i);
+				Serial.print(", res = ");
+				Serial.println((unsigned int)res, HEX);
+
 				i = 0;
 				res->end();
 			}
@@ -213,101 +214,6 @@ void setup() {
 		req->send(res);
 	});
 
-	// error output
-	server.on("/test4", HTTP_GET, [](AsyncWebServerRequest *req){
-		uint16_t i = 0;
-		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [&i](AsyncResponseStreamChunked* res) -> size_t {
-			size_t ret = 0;
-			uint16_t count = logs.Count();
-
-			Serial.print("count = ");
-			Serial.print(count);
-			Serial.print(", i = ");
-			Serial.print(i);
-			Serial.print(", res = ");
-			Serial.println((unsigned int)res, HEX);
-
-			if(i < count){
-				const log_t* data = logs.Get(i);
-				ret = res->printf("%u,%d,%d\n", i, data->temp, data->hum);
-				i++;
-			} else {
-				res->end();
-			}
-			return ret;
-		});
-
-		res->printf("%u\n", i);
-		req->send(res);
-		res->printf("%u\n", 1);
-	});
-
-	server.on("/test5", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [](AsyncResponseStreamChunked* res) -> size_t {
-			size_t ret = 0;
-			static uint16_t i = 0;
-			uint16_t count = logs.Count();
-
-			Serial.print("count = ");
-			Serial.print(count);
-			Serial.print(", i = ");
-			Serial.print(i);
-			Serial.print(", res = ");
-			Serial.println((unsigned int)res, HEX);
-
-			if(i < count){
-				const log_t* data = logs.Get(i);
-				ret = res->printf("%u,%d,%d\n", i, data->temp, data->hum);
-				i++;
-			} else {
-				i = 0;
-				res->end();
-			}
-			return ret;
-		});
-
-		res->printf("%u\n", 0);
-		req->send(res);
-		res->printf("%u\n", 1);
-	});
-
-
-/*
-Fatal exception 28(LoadProhibitedCause):
-epc1=0x402073e3, epc2=0x00000000, epc3=0x00000000, excvaddr=0x00000001, depc=0x00000000
-
-Exception (28):
-epc1=0x402073e3 epc2=0x00000000 epc3=0x00000000 excvaddr=0x00000001 depc=0x00000000
-
-ctx: sys 
-sp: 3ffffbf0 end: 3fffffb0 offset: 01a0
-
- ets Jan  8 2013,rst cause:2, boot mode:(1,6)
- ets Jan  8 2013,rst cause:4, boot mode:(1,6)
-*/
-	server.on("/test6", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [](AsyncResponseStreamChunked* res) -> size_t {
-			size_t ret = 0;
-			static uint16_t i = 0;
-			uint16_t count = logs.Count();
-
-			Serial.print("count = ");
-			Serial.print(count);
-			Serial.print(", i = ");
-			Serial.print(i);
-			Serial.print(", res = ");
-			Serial.println((unsigned int)res, HEX);
-
-			const log_t* data = logs.Get(i);
-			ret = res->printf("%u,%u,%d,%d\n", count, i, data->temp, data->hum);
-			i++;
-			return ret;
-		});
-
-		res->printf("%u\n", 0);
-		req->send(res);
-		res->printf("%u\n", 1);
-	});
 
 	// for debug
 	server.on("/out", HTTP_GET, [](AsyncWebServerRequest *req){
@@ -381,6 +287,8 @@ void loop() {
 		}
 
 
+		Serial.print("log count = ");
+		Serial.println(logs.Count());
 		Serial.print("mode output = ");
 		Serial.println(pin.GetOutput());
 
