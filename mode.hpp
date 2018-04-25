@@ -4,10 +4,10 @@
 #include <stdint.h>
 
 struct mode {
-	// on time
+	// on time (s)
 	unsigned int on : 12;
 
-	// off time
+	// off time (s)
 	unsigned int off : 12;
 } __attribute__((packed));
 

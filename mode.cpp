@@ -47,6 +47,7 @@ int Mode::Update() {
 			temp.on = reload.on;
 
 			if (temp.off != 0) {
+				temp.off -=1;
 				_status = 2;
 				return 0;
 			}
@@ -60,6 +61,7 @@ int Mode::Update() {
 			temp.off = reload.off;
 
 			if (temp.on != 0) {
+				temp.on -=1;
 				_status = 1;
 				return 1;
 			}

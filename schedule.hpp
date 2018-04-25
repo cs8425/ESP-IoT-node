@@ -47,6 +47,7 @@ class Scheduler {
 		int Update(time_t now, mode* m); // return 1 >> change, 0 >> don't change
 		int Update(time_t now);
 		const mode* GetOutput();
+		int16_t GetModeId();
 
 		//const schedule* GetD(uint16_t idx);
 		//void defragment(bool full = true, uint16_t idx = 0);

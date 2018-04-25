@@ -204,4 +204,7 @@ const mode* Scheduler::GetOutput() {
 	return &_output;
 }
 
+int16_t Scheduler::GetModeId() {
+	return _lastId;
+}
 

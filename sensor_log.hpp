@@ -5,7 +5,8 @@
 
 // TODO: fix define MAX_LOG_COUNT not work for preallocated array
 #ifndef MAX_LOG_COUNT
-#define MAX_LOG_COUNT (60*24*3)
+//#define MAX_LOG_COUNT (60*24*3)
+#define MAX_LOG_COUNT (60*36)
 #endif
 
 struct log_t {
@@ -22,6 +23,7 @@ class Log {
 
 		void Add(uint16_t temp, uint16_t hum);
 		log_t* Get(uint16_t idx); // 0 >> oldest
+		log_t* GetLatest(uint16_t idx); // 0 >> latest
 		uint16_t Count();
 
 	private:

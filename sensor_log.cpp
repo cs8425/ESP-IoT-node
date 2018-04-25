@@ -45,3 +45,17 @@ log_t* Log::Get(uint16_t idx) {
 
 }
 
+log_t* Log::GetLatest(uint16_t idx) {
+	if(idx >= Count()) {
+		return nullptr;
+	}
+
+	uint16_t id = head - idx + MAX_LOG_COUNT - 1;
+	if(id >= MAX_LOG_COUNT) {
+		id -= MAX_LOG_COUNT;
+	}
+
+	return &_log[id];
+
+}
+
