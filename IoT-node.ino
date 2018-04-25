@@ -81,7 +81,8 @@ void setup() {
 		AsyncResponseStream *res = req->beginResponseStream("text/plain");
 		unsigned count = sch.Count();
 		const mode* m = sch.GetOutput();
-		res->printf("sch: %u,%u,%u\n", count, m->on, m->off);
+		int16_t mid = sch.GetModeId();
+		res->printf("sch: %d,%u,%u,%u\n", mid, count, m->on, m->off);
 		res->printf("pin: %u\n", pin.GetOutput());
 		req->send(res);
 	});
@@ -147,6 +148,8 @@ void setup() {
 	});
 
 	server.serveStatic("/", SPIFFS, "/web/").setDefaultFile("index.html");
+
+	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 	server.begin();
 }
 
@@ -262,6 +265,18 @@ void scan() {
 
 void setupServer(AsyncWebServer& server) {
 
+	server.on("/status", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		unsigned count = sch.Count();
+		const mode* m = sch.GetOutput();
+		int16_t mid = sch.GetModeId();
+		res->printf("sch:%d,%u,%u,%u\n", mid, count, m->on, m->off);
+		res->printf("pin:%u\n", pin.GetOutput());
+		res->printf("log:%u\n", logs.Count());
+		//res->printf("tsk:%u\n", tsk.GetTaskId());
+		req->send(res);
+	});
+
 	server.on("/sch/ls", HTTP_GET, [](AsyncWebServerRequest *req){
 		AsyncResponseStream *res = req->beginResponseStream("text/plain");
 		for(unsigned i = 0; i < 7; i++){
@@ -279,8 +294,6 @@ void setupServer(AsyncWebServer& server) {
 	});
 
 	server.on("/sch/add", HTTP_GET, [](AsyncWebServerRequest *req){
-		//int params = req->params();
-		//if (params != 5) WERR(req);
 		PARAM_CHECK("w");
 		PARAM_CHECK("as");
 		PARAM_CHECK("bs");
@@ -325,42 +338,72 @@ void setupServer(AsyncWebServer& server) {
 	});
 
 	server.on("/mode", HTTP_GET, [](AsyncWebServerRequest *req){
-		if(!req->hasParam("on")) WERR(req);
-		if(!req->hasParam("off")) WERR(req);
+		PARAM_CHECK("on");
+		PARAM_CHECK("of");
 
-		String on = req->getParam("on")->value();
-		String off = req->getParam("off")->value();
-		pin.SetMode(on.toInt(), off.toInt());
+		unsigned on = PARAM_GET_INT("on") - 1;
+		unsigned of = PARAM_GET_INT("of") - 1;
+		pin.SetMode(on, of);
 
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));
 	});
 
-	server.on("/log", HTTP_GET, [](AsyncWebServerRequest *req){
-		uint16_t* i = new uint16_t(0);
+	server.on("/log/all", HTTP_GET, [](AsyncWebServerRequest *req){
+		uint16_t* vars = new uint16_t[2];
+		vars[0] = 0;
+		vars[1] = logs.Count();
 
-		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [i](AsyncResponseStreamChunked* res) -> size_t {
+		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStreamChunked* res, size_t maxLen) {
+			UNUSED(maxLen);
 			size_t ret = 0;
-			uint16_t count = logs.Count();
+			uint16_t count = vars[1];
 
-			if(*i < count){
-				const log_t* data = logs.Get(*i);
-				ret = res->printf("%u,%d,%d\n", *i, data->temp, data->hum);
-				*i += 1;
-			} else {
-				Serial.print("count = ");
-				Serial.print(count);
-				Serial.print(", i = ");
-				Serial.print(*i);
-				Serial.print(", res = ");
-				Serial.println((unsigned int)res, HEX);
+			while (ret < maxLen - 16) {
+				if(vars[0] < count){
+					const log_t* data = logs.Get(vars[0]);
+					ret += res->printf("%u,%d,%d\n", vars[0], data->temp, data->hum);
+					vars[0] += 1;
+				} else {
+					Serial.print("count = ");
+					Serial.print(count);
+					Serial.print(", i = ");
+					Serial.print(vars[0]);
+					Serial.print(", res = ");
+					Serial.println((unsigned int)res, HEX);
 
-				delete i;
-				res->end();
+					delete vars;
+					res->end();
+					break;
+				}
 			}
-			return ret;
 		});
 
-		res->printf("%u\n", logs.Count());
+		res->printf("%u\n", vars[1]);
+		req->send(res);
+	});
+
+	server.on("/log", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("c");
+
+		uint16_t* vars = new uint16_t[2];
+		vars[0] = 0;
+		vars[1] = PARAM_GET_INT("c");
+
+		if(vars[1] > logs.Count()) vars[1] = logs.Count();
+
+		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStreamChunked* res, size_t maxLen) {
+			UNUSED(maxLen);
+			uint16_t count = vars[1];
+
+			if(vars[0] < count){
+				const log_t* data = logs.GetLatest(vars[0]);
+				res->printf("%d,%d\n", data->temp, data->hum);
+				vars[0] += 1;
+			} else {
+				delete vars;
+				res->end();
+			}
+		});
 		req->send(res);
 	});
 
