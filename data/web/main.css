@@ -1,0 +1,96 @@
+body {
+	font-family: monospace;
+	width: auto;
+	font-size: 1em;
+}
+
+div.block, hr {
+	margin: 1vw 1vw;
+}
+
+
+input {
+	border-radius: .8em;
+	padding: 0.7em 1em;
+	background: #FFFFFF;
+	border: 1px solid rgba(34, 36, 38, 0.15);
+	box-shadow: none;
+}
+
+/*.hide, .tmpl, .tabs > div.block {*/
+.hide, .tmpl {
+	display: none;
+}
+
+.btn {
+	border: none;
+	border-radius: 1em;
+	padding: .5em;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: .8em;
+	margin: auto;
+	cursor: pointer;
+}
+
+.btn.primary {
+	background-color: #4caf50;
+	color: white;
+}
+
+
+.center {
+	margin: auto;
+	width: 50%;
+	padding: .8em;
+	text-align: center;
+}
+
+.nav {
+	text-align: center;
+}
+.nav > .btn {
+	border-radius: .5em;
+	background-color: #4c7daf;
+	color: white;
+}
+
+.param > div {
+	display: flex;
+	width: 90%;
+	padding-top: .8em;
+	padding-bottom: .8em;
+}
+.param > div > div:nth-child(1) {
+	text-align: right;
+	width: 45%;
+}
+
+.sch > .table {
+	width: 100%;
+}
+
+.sch > .table div.en {
+	background-color: #87e48a80;
+}
+.table {
+	text-align: right;
+	display: table;
+	margin: auto;
+}
+.table > div {
+	display: table-row;
+}
+.table > div:nth-child(1) {
+	display: table-header-group;
+	background-color: #4c7daf;
+	color: white;
+}
+.table > div > div {
+	display: table-cell;
+	padding-top: .8em;
+	padding-bottom: .8em;
+	padding: 1em;
+}
+

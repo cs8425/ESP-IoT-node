@@ -1,0 +1,54 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>esp8266 IoT node</title>
+	<!--<script src="jquery.min.js"></script>-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+<div class="block nav">
+	<div class="btn">Status</div>
+	<div class="btn">Schedule</div>
+	<div class="btn">Tasks</div>
+	<div class="btn">Logs</div>
+	<div class="btn">Settings</div>
+</div>
+<div class="tabs">
+	<div class="block param" id="status">
+		<div><div>Temperature:</div>&nbsp;<div>25</div>&nbsp;C</div>
+		<div><div>Humidity:</div>&nbsp;<div>50</div>&nbsp;%</div>
+		<div><div>Pin Output:</div>&nbsp;<div>ON</div></div>
+		<div><div>mode.on:</div>&nbsp;<div>3</div>&nbsp;s</div>
+		<div><div>mode.off:</div>&nbsp;<div>5</div>&nbsp;s</div>
+		<div><div>heap:</div>&nbsp;<div>17000</div>&nbsp;Byte</div>
+	</div>
+
+	<div class="block sch">
+		<div class="table">
+			<div><div>+</div> <div>week</div>&nbsp;<div>start time</div>&nbsp;~&nbsp;<div>end time</div>&nbsp;<div>on</div>&nbsp;<div>off</div></div>
+			<div class="en"><div>E</div> <div>w0</div>&nbsp;<div>02:20:30</div>&nbsp;<div>02:30:30</div>&nbsp;<div>10</div>&nbsp;<div>15</div></div>
+			<div><div>E</div> <div>w0</div>&nbsp;<div>02:20:30</div>&nbsp;<div>02:30:30</div>&nbsp;<div>10</div>&nbsp;<div>15</div></div>
+		</div>
+	</div>
+
+	<div class="block task hide">
+	</div>
+
+	<div class="block param" id="setting">
+		<div><div>Key:</div>&nbsp;<div><input type="file" id="key" /></div></div>
+		<div><div>New Key:</div>&nbsp;<div><input type="file" id="key2" /></div></div>
+		<div><div>WiFi AP SSID:</div>&nbsp;<div><input type="text" id="ap-ssid" placeholder="ESP..." /></div></div>
+		<div><div>WiFi AP Password:</div>&nbsp;<div><input type="password" id="ap-pwd" /></div></div>
+		<div><div>WiFi STA SSID:</div>&nbsp;<div><input type="text" id="sta-ssid" placeholder="hotspot" /></div></div>
+		<div><div>WiFi STA Password:</div>&nbsp;<div><input type="password" id="sta-pwd" /></div></div>
+
+		<div><div></div><span class="primary btn" id="settingBtn">Save</span></div>
+	</div>
+</div>
+
+</body>
+<script src="main.js"></script>
+</html>
+

@@ -77,13 +77,24 @@ void setup() {
 	});
 
 	// for debug
-	server.on("/out", HTTP_GET, [](AsyncWebServerRequest *req){
+	server.on("/dump", HTTP_GET, [](AsyncWebServerRequest *req){
 		AsyncResponseStream *res = req->beginResponseStream("text/plain");
 		unsigned count = sch.Count();
 		const mode* m = sch.GetOutput();
 		int16_t mid = sch.GetModeId();
-		res->printf("sch: %d,%u,%u,%u\n", mid, count, m->on, m->off);
-		res->printf("pin: %u\n", pin.GetOutput());
+		res->printf("sch:%d,%u,%u,%u\n", mid, count, m->on, m->off);
+
+		//res->printf("tsk:%u\n", tsk.GetTaskId());
+
+		const log_t* data = logs.GetLatest(1);
+		if (data != nullptr) {
+			res->printf("sen:%d,%d\n", data->temp, data->hum);
+		}
+
+		res->printf("pin:%u\n", pin.GetOutput());
+		res->printf("log:%u\n", logs.Count());
+		res->printf("heap:%u\n", ESP.getFreeHeap());
+
 		req->send(res);
 	});
 
@@ -265,30 +276,54 @@ void scan() {
 
 void setupServer(AsyncWebServer& server) {
 
+/*
+	// get & processing setting
+	server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *req){
+
+	});
+	server.on("/setting", HTTP_POST, [](AsyncWebServerRequest *req){
+
+	});*/
+
 	server.on("/status", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		AsyncResponseStream *res = req->beginResponseStream("text/json");
 		unsigned count = sch.Count();
 		const mode* m = sch.GetOutput();
 		int16_t mid = sch.GetModeId();
-		res->printf("sch:%d,%u,%u,%u\n", mid, count, m->on, m->off);
-		res->printf("pin:%u\n", pin.GetOutput());
-		res->printf("log:%u\n", logs.Count());
-		//res->printf("tsk:%u\n", tsk.GetTaskId());
+		res->printf("{\"mid\":%d,\"md\":[%d,%d],\"count\":%u,", mid, m->on, m->off, count);
+
+		const log_t* data = logs.GetLatest(1);
+		if (data != nullptr) {
+			res->printf("\"sen\":[%d,%d],", data->temp, data->hum);
+		}
+
+		res->printf("\"pin\":%u,", pin.GetOutput());
+		res->printf("\"log\":%u,", logs.Count());
+		res->printf("\"heap\":%u}", ESP.getFreeHeap());
+
 		req->send(res);
 	});
 
 	server.on("/sch/ls", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		AsyncResponseStream *res = req->beginResponseStream("text/json");
+
+		res->printf("{\"def\":[\n");
 		for(unsigned i = 0; i < 7; i++){
 			const mode* m = sch.GetDef(i);
-			res->printf("%u:%u,%u\n", i, m->on, m->off);
+			res->printf("[%u,%u]%s", m->on, m->off, (i != 6) ? ",\n":"");
 		}
 
+		res->printf("],\"sch\":[\n");
 		unsigned count = sch.Count();
 		for(unsigned i = 0; i < count; i++){
 			const schedule* data = sch.Get(i);
-			res->printf("%u,%u,%u,%u,%u\n", data->start.week, data->start.sec, data->end.sec, data->m.on, data->m.off);
+			res->printf("[%u,%u,%u,%u,%u]", data->start.week, data->start.sec, data->end.sec, data->m.on, data->m.off);
+			if(i < count - 1) res->printf(",\n");
 		}
+		res->printf("],");
+
+		int16_t mid = sch.GetModeId();
+		res->printf("\"mid\":%d,\"count\":%u}\n", mid, count);
 
 		req->send(res);
 	});
@@ -354,7 +389,6 @@ void setupServer(AsyncWebServer& server) {
 		vars[1] = logs.Count();
 
 		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStreamChunked* res, size_t maxLen) {
-			UNUSED(maxLen);
 			size_t ret = 0;
 			uint16_t count = vars[1];
 
