@@ -11,15 +11,47 @@ div.block, hr {
 
 input {
 	border-radius: .8em;
-	padding: 0.7em 1em;
+	/*padding: 0.7em 1em;*/
 	background: #FFFFFF;
 	border: 1px solid rgba(34, 36, 38, 0.15);
 	box-shadow: none;
 }
 
-/*.hide, .tmpl, .tabs > div.block {*/
-.hide, .tmpl {
+
+.modal {
 	display: none;
+	position: fixed; /* Stay in place */
+	z-index: 1; /* Sit on top */
+	left: 0;
+	top: 0;
+	width: 100vw; /* Full width */
+	height: 100vh; /* Full height */
+	overflow: auto; /* Enable scroll if needed */
+	background-color: rgb(0,0,0); /* Fallback color */
+	background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.modal > .content {
+	background-color: #fefefe;
+	margin: 15vh auto;
+	padding: 20px;
+	border: 1px solid #888;
+	width: 80%;
+	border-radius: 1em;
+}
+.modal > .content > .header, .modal > .content > .footer {
+	padding: 2px 16px;
+}
+.modal > .content > .header > .close {
+	color: #aaa;
+	float: right;
+	font-size: 28px;
+	font-weight: bold;
+}
+.modal > .content > .header > .close:hover, .modal > .content > .header > .close:focus {
+	color: black;
+	text-decoration: none;
+	cursor: pointer;
 }
 
 .btn {
@@ -39,6 +71,25 @@ input {
 	color: white;
 }
 
+.btn.cancel {
+	background-color: #E0E1E2;
+	color: rgba(0, 0, 0, 0.6);
+}
+
+#settings div.btn {
+	background-color: #727290;
+	color: white;
+	margin: .3em;
+}
+
+
+.hide, .tmpl, .tabs > div.block {
+	display: none;
+}
+
+.tabs > div.block.def {
+	display: block;
+}
 
 .center {
 	margin: auto;
@@ -59,21 +110,16 @@ input {
 .param > div {
 	display: flex;
 	width: 90%;
-	padding-top: .8em;
-	padding-bottom: .8em;
+	padding: .5em 0;
 }
 .param > div > div:nth-child(1) {
 	text-align: right;
 	width: 45%;
 }
-
-.sch > .table {
-	width: 100%;
+.param > div > * {
+	padding: .5em .7em;
 }
 
-.sch > .table div.en {
-	background-color: #87e48a80;
-}
 .table {
 	text-align: right;
 	display: table;
@@ -87,10 +133,24 @@ input {
 	background-color: #4c7daf;
 	color: white;
 }
+.table.def > div:nth-child(1) {
+	background-color: #73540d;
+	color: white;
+	cursor: pointer;
+}
 .table > div > div {
 	display: table-cell;
 	padding-top: .8em;
 	padding-bottom: .8em;
 	padding: 1em;
+}
+
+.sch > .table {
+	width: 100%;
+	background-color: #310e5814;
+}
+
+.sch > .table div.en {
+	background-color: #87e48a80;
 }
 

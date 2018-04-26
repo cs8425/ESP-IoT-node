@@ -98,67 +98,11 @@ void setup() {
 		req->send(res);
 	});
 
-	// test req & res method
-	server.on("/501", HTTP_GET, [](AsyncWebServerRequest *req){
-		WERRC(req, 501);
-	});
-
-	server.on("/401", HTTP_GET, [](AsyncWebServerRequest *req){
-		WERRC(req, 401);
-	});
-
-	server.on("/str", HTTP_GET, [](AsyncWebServerRequest *req){
-		String z = PARAM_GET_STR("z", "def text");
-		Serial.print("/str, parm['z'] = ");
-		Serial.println(z);
-		req->send(200, "text/plain", z);
-	});
-
-	server.on("/8", HTTP_GET, [](AsyncWebServerRequest *req){
-		PARAM_CHECK("z");
-		int z = PARAM_GET_INT("z");
-		Serial.print("/8, parm['z'] = ");
-		Serial.println(z);
-		req->send(200, "text/plain", String(z));
-	});
-
-	server.on("/3", HTTP_GET, [](AsyncWebServerRequest *req){
-		PARAM_CHECKC("x", 510);
-		PARAM_CHECKC("y", 511);
-		Serial.println("/3, have x & y");
-		req->send(200, "text/plain", "");
-	});
-
-	server.on("/test3", HTTP_GET, [](AsyncWebServerRequest *req){
-		uint16_t* i = new uint16_t(0);
-
-		AsyncWebServerResponse *res = req->beginChunkedResponse("text/plain", [i](AsyncWebServerResponse* res, uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-			UNUSED(index);
-			size_t ret = 0;
-			uint16_t count = logs.Count();
-
-			if(*i < count){
-				const log_t* data = logs.Get(*i);
-				ret = snprintf((char*)buffer, maxLen, "%u,%d,%d\n", *i, data->temp, data->hum);
-				*i += 1;
-			} else {
-				Serial.print("count = ");
-				Serial.print(count);
-				Serial.print(", i = ");
-				Serial.print(*i);
-				Serial.print(", res = ");
-				Serial.println((unsigned int)res, HEX);
-
-				delete i;
-				res->end();
-			}
-			return ret;
-		});
-
-		req->send(res);
-	});
-
 	server.serveStatic("/", SPIFFS, "/web/").setDefaultFile("index.html");
+
+	server.onNotFound([](AsyncWebServerRequest *request){
+		request->send(404);
+	});
 
 	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 	server.begin();

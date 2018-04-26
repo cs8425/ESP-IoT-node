@@ -2,8 +2,8 @@
 <head>
 	<meta charset="utf-8">
 	<title>esp8266 IoT node</title>
-	<!--<script src="jquery.min.js"></script>-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="jquery.min.js"></script>
+	<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>-->
 	<link rel="stylesheet" href="main.css">
 </head>
 
@@ -11,40 +11,69 @@
 <div class="block nav">
 	<div class="btn">Status</div>
 	<div class="btn">Schedule</div>
-	<div class="btn">Tasks</div>
-	<div class="btn">Logs</div>
+	<div class="btn hide">Tasks</div>
+	<div class="btn hide">Logs</div>
 	<div class="btn">Settings</div>
 </div>
 <div class="tabs">
-	<div class="block param" id="status">
-		<div><div>Temperature:</div>&nbsp;<div>25</div>&nbsp;C</div>
-		<div><div>Humidity:</div>&nbsp;<div>50</div>&nbsp;%</div>
+	<div class="block param def" id="status">
+		<div><div>Temperature:</div>&nbsp;<div>25</div>&nbsp;<div>C</div></div>
+		<div><div>Humidity:</div>&nbsp;<div>50</div>&nbsp;<div>%</div></div>
 		<div><div>Pin Output:</div>&nbsp;<div>ON</div></div>
-		<div><div>mode.on:</div>&nbsp;<div>3</div>&nbsp;s</div>
-		<div><div>mode.off:</div>&nbsp;<div>5</div>&nbsp;s</div>
-		<div><div>heap:</div>&nbsp;<div>17000</div>&nbsp;Byte</div>
+		<div><div>mode.on:</div>&nbsp;<div>3</div>&nbsp;<div>s</div></div>
+		<div><div>mode.off:</div>&nbsp;<div>5</div>&nbsp;<div>s</div></div>
+		<div><div>heap:</div>&nbsp;<div>17000</div>&nbsp;<div>Byte</div></div>
 	</div>
 
-	<div class="block sch">
-		<div class="table">
-			<div><div>+</div> <div>week</div>&nbsp;<div>start time</div>&nbsp;~&nbsp;<div>end time</div>&nbsp;<div>on</div>&nbsp;<div>off</div></div>
-			<div class="en"><div>E</div> <div>w0</div>&nbsp;<div>02:20:30</div>&nbsp;<div>02:30:30</div>&nbsp;<div>10</div>&nbsp;<div>15</div></div>
-			<div><div>E</div> <div>w0</div>&nbsp;<div>02:20:30</div>&nbsp;<div>02:30:30</div>&nbsp;<div>10</div>&nbsp;<div>15</div></div>
+	<div class="block sch" id="schedule">
+
+		<div class="table def" id="sch-def">
+			<div><div>week</div> <div>w7</div> <div>w1</div> <div>w2</div> <div>w3</div> <div>w4</div> <div>w5</div> <div>w6</div></div>
+			<div><div>on</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div></div>
+			<div><div>off</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div></div>
+		</div>
+		<hr/>
+		<div class="table" id="sch-cus">
+			<div><div>+</div> <div>week</div>&nbsp;<div>start time</div>&nbsp;<div>end time</div>&nbsp;<div>on</div>&nbsp;<div>off</div></div>
 		</div>
 	</div>
 
-	<div class="block task hide">
+	<div class="block tasks hide">
 	</div>
 
-	<div class="block param" id="setting">
-		<div><div>Key:</div>&nbsp;<div><input type="file" id="key" /></div></div>
-		<div><div>New Key:</div>&nbsp;<div><input type="file" id="key2" /></div></div>
-		<div><div>WiFi AP SSID:</div>&nbsp;<div><input type="text" id="ap-ssid" placeholder="ESP..." /></div></div>
-		<div><div>WiFi AP Password:</div>&nbsp;<div><input type="password" id="ap-pwd" /></div></div>
-		<div><div>WiFi STA SSID:</div>&nbsp;<div><input type="text" id="sta-ssid" placeholder="hotspot" /></div></div>
-		<div><div>WiFi STA Password:</div>&nbsp;<div><input type="password" id="sta-pwd" /></div></div>
+	<div class="block param" id="settings">
+		<div><div>Key:</div>&nbsp;<div><input type="file" id="key" /><div class="btn">Load from local</div><div class="btn">Save to local</div></div></div>
+		<div><div>New Key:</div>&nbsp;<div><input type="file" id="key2" /><div class="btn">generate new</div><div class="btn">Save to local</div></div></div>
+		<div><div>WiFi Mode:</div>&nbsp;<div><select><option value="AP_STA">AP+STA</option><option value="AP">AP</option><option value="STA">STA</option></select></div></div>
+		<div><div>WiFi AP SSID:</div>&nbsp;<input type="text" id="ap-ssid" placeholder="ESP..." /></div>
+		<div><div>WiFi AP Password:</div>&nbsp;<input type="password" id="ap-pwd" /></div>
+		<div><div>WiFi AP broadcast SSID:</div>&nbsp;<input type="checkbox" id="ap-broadcast" checked/></div>
+		<div><div>WiFi STA SSID:</div>&nbsp;<input type="text" id="sta-ssid" placeholder="hotspot" /></div>
+		<div><div>WiFi STA Password:</div>&nbsp;<input type="password" id="sta-pwd" /></div>
 
 		<div><div></div><span class="primary btn" id="settingBtn">Save</span></div>
+	</div>
+</div>
+
+<div id="myModal" class="modal">
+	<div class="content">
+		<div class="header">
+			<span class="close">&times;</span>
+			<h2>Set Default Output</h2>
+		</div>
+
+
+		<p><div class="block param">
+			<div><div>ON time:</div>&nbsp;<input type="text" placeholder="seconds..." /></div>
+			<div><div>OFF time:</div>&nbsp;<input type="text" placeholder="seconds..." /></div>
+
+			<div><div></div><span class="cancel btn">cancel</span><span class="primary btn">Save</span></div>
+		</div></p>
+
+
+		<div class="footer">
+			<span class="cancel btn">cancel</span><span class="primary btn">Save</span>
+		</div>
 	</div>
 </div>
 
