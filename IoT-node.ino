@@ -279,41 +279,67 @@ void setupServer(AsyncWebServer& server) {
 		PARAM_CHECK("on");
 		PARAM_CHECK("of");
 
-		unsigned w = PARAM_GET_INT("w") - 1;
-		unsigned as = PARAM_GET_INT("as") - 1;
-		unsigned bs = PARAM_GET_INT("bs") - 1;
+		// TODO: check input
+		unsigned w = PARAM_GET_INT("w") - 1; // 0~6
+		unsigned as = PARAM_GET_INT("as") - 1; // 0 ~ 86399
+		unsigned bs = PARAM_GET_INT("bs") - 1; // 0 ~ 86399
 		unsigned on = PARAM_GET_INT("on") - 1;
 		unsigned of = PARAM_GET_INT("of") - 1;
+
+		if(w >= 7) WERRC(req, 400);
+		if(as >= 86400) WERRC(req, 400);
+		if(bs >= 86400) WERRC(req, 400);
 
 		int idx = sch.Add(daytime{w, as}, daytime{w, bs}, mode{on, of});
 		req->send(200, "text/plain", String(idx));
 	});
 
 	server.on("/sch/mod", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("i");
 		PARAM_CHECK("w");
 		PARAM_CHECK("as");
 		PARAM_CHECK("bs");
 		PARAM_CHECK("on");
 		PARAM_CHECK("of");
 
+		// TODO: check input
 		unsigned i = PARAM_GET_INT("i") - 1;
-		unsigned w = PARAM_GET_INT("w") - 1;
-		unsigned as = PARAM_GET_INT("as") - 1;
-		unsigned bs = PARAM_GET_INT("bs") - 1;
+		unsigned w = PARAM_GET_INT("w") - 1; // 0~6
+		unsigned as = PARAM_GET_INT("as") - 1; // 0 ~ 86399
+		unsigned bs = PARAM_GET_INT("bs") - 1; // 0 ~ 86399
 		unsigned on = PARAM_GET_INT("on") - 1;
 		unsigned of = PARAM_GET_INT("of") - 1;
+
+		if(w >= 7) WERRC(req, 400);
+		if(as >= 86400) WERRC(req, 400);
+		if(bs >= 86400) WERRC(req, 400);
 
 		bool ret = sch.Mod(i, daytime{w, as}, daytime{w, bs}, mode{on, of});
 		req->send(200, "text/plain", String(ret));
 	});
 
 	server.on("/sch/rm", HTTP_GET, [](AsyncWebServerRequest *req){
-		int params = req->params();
-		if (params != 1) WERR(req);
-		if(!req->hasParam("i")) WERR(req);
+		PARAM_CHECK("i");
+		unsigned idx = PARAM_GET_INT("i") - 1;
 
-		unsigned idx = unsigned(req->getParam("i")->value().toInt());
 		req->send(200, "text/plain", String(sch.Del(idx)));
+	});
+
+	server.on("/sch/def", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("w");
+		PARAM_CHECK("on");
+		PARAM_CHECK("of");
+
+		unsigned w = PARAM_GET_INT("w") - 1;
+		unsigned on = PARAM_GET_INT("on") - 1;
+		unsigned of = PARAM_GET_INT("of") - 1;
+
+		if(w <= 7) {
+			sch.SetDefaultMode(w, on, of);
+		} else {
+			sch.SetDefaultMode(on, of);
+		}
+		req->send(200, "text/plain", "ok");
 	});
 
 	server.on("/mode", HTTP_GET, [](AsyncWebServerRequest *req){

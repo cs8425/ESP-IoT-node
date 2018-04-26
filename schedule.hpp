@@ -55,7 +55,7 @@ class Scheduler {
 		void defragment(bool full = true, uint16_t idx = 0);
 		uint16_t _count;
 
-		int16_t _lastId;
+		int16_t _lastId; // id < 0 -> default X; id >= 0 -> _sch[X]
 
 		schedule _sch[MAX_SCHEDLE_COUNT];
 		mode _defM[7];

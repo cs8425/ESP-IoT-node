@@ -153,6 +153,11 @@ void Scheduler::SetDefaultMode(uint16_t on, uint16_t off) {
 		_defM[i].on = on;
 		_defM[i].off = off;
 	}
+
+	// trigger update
+	if (_lastId < 0) {
+		_lastId = -20;
+	}
 }
 
 void Scheduler::SetDefaultMode(uint8_t w, uint16_t on, uint16_t off) {
@@ -160,6 +165,11 @@ void Scheduler::SetDefaultMode(uint8_t w, uint16_t on, uint16_t off) {
 
 	_defM[w].on = on;
 	_defM[w].off = off;
+
+	// trigger update
+	if (_lastId == -10 - w) {
+		_lastId = -20;
+	}
 }
 
 int Scheduler::Update(time_t now) {

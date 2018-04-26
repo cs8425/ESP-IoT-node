@@ -34,13 +34,19 @@ input {
 .modal > .content {
 	background-color: #fefefe;
 	margin: 15vh auto;
-	padding: 20px;
 	border: 1px solid #888;
 	width: 80%;
 	border-radius: 1em;
 }
-.modal > .content > .header, .modal > .content > .footer {
-	padding: 2px 16px;
+.modal > .content > .header {
+	padding: .5em 1.2em;
+	background: #50d2a8;
+	border-top-left-radius: 1em;
+	border-top-right-radius: 1em;
+}
+.modal > .content > .footer {
+	padding: .5em 1.2em;
+	text-align: right;
 }
 .modal > .content > .header > .close {
 	color: #aaa;
@@ -68,12 +74,15 @@ input {
 
 .btn.primary {
 	background-color: #4caf50;
-	color: white;
+	color: #fff;
 }
-
 .btn.cancel {
 	background-color: #E0E1E2;
 	color: rgba(0, 0, 0, 0.6);
+}
+.btn.danger {
+	background-color: #DB2828;
+	color: #fff;
 }
 
 #settings div.btn {
@@ -118,6 +127,10 @@ input {
 }
 .param > div > * {
 	padding: .5em .7em;
+}
+
+.param > div.time > input {
+	width: 12vw;
 }
 
 .table {
