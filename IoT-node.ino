@@ -18,6 +18,7 @@
 #include "schedule.hpp"
 #include "sensor_log.hpp"
 
+#include "auth.hpp"
 #include "web.hpp"
 
 //#define OUT_PIN D4
@@ -39,6 +40,8 @@ Log logs;
 
 Scheduler sch;
 Mode pin;
+
+Auth auth;
 
 AsyncWebServer server(80);
 
@@ -74,6 +77,76 @@ void setup() {
 
 	server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *req){
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));
+	});
+
+	server.on("/key0", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		uint32_t dt = millis();
+		const char* hex = getKey();
+		dt = millis() - dt;
+		res->printf("hex:%s\n", hex);
+		res->printf("dt:%u\n", dt);
+
+		req->send(res);
+	});
+
+
+	auth.setKey((uint8_t*)"0123456789abcdef");
+	server.on("/key", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		uint32_t dt = millis();
+		const char* hex = auth.GetIVHex();
+		dt = millis() - dt;
+		res->printf("hex:%s\n", hex);
+		res->printf("dt:%u\n", dt);
+
+		req->send(res);
+	});
+
+	server.on("/sign", HTTP_GET, [](AsyncWebServerRequest *req){
+		if (!req->hasParam("k")) {
+			req->send(400, "text/plain", "need param");
+			return;
+		}
+		String key = req->getParam("k")->value();
+
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		uint32_t dt = millis();
+		auth.Sign((uint8_t*)key.c_str(), key.length());
+		dt = millis() - dt;
+
+		auth.Reset(); //reset counter
+
+		res->printf("hex:");
+		for (unsigned i = 0; i < key.length(); i++)	{
+			res->printf("%02x", key.charAt(i));
+		}
+		res->printf("\ndt:%u\n", dt);
+
+		req->send(res);
+	});
+
+	server.on("/check", HTTP_GET, [](AsyncWebServerRequest *req){
+		if (!req->hasParam("s") || !req->hasParam("d")) {
+			req->send(400, "text/plain", "need param");
+			return;
+		}
+		String sign = req->getParam("s")->value();
+		String data = req->getParam("d")->value();
+
+		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		uint32_t dt = millis();
+		bool ok = auth.CheckKeyHex((uint8_t*)sign.c_str(), sign.length(), (uint8_t*)data.c_str());
+		dt = millis() - dt;
+
+		res->printf("sign0:");
+		for (unsigned i = 0; i < sign.length(); i++)	{
+			res->printf("%02x", sign.charAt(i));
+		}
+		res->printf("\ndt:%u\n", dt);
+		res->printf("\ncheck:%u\n", ok);
+
+		req->send(res);
 	});
 
 	// for debug

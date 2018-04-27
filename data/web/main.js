@@ -115,11 +115,18 @@ function updateSchEle(o) {
 		e.appendTo(cus)
 	}
 
+	updateSchHight(o)
+}
+
+function updateSchHight(o) {
+	var def = $('#sch-def')
+	var cus = $('#sch-cus')
+
 	//disable all highlight
 	def.find('div > div').removeClass('en')
 	cus.find('> div').removeClass('en')
 
-	var mid = o.mid
+	var mid = o.mid;
 	if(mid < 0) { // default rule
 		var wid = -mid - 10
 		var divs = def.find('div > div:nth-child(' + (wid+2) + ')')
@@ -230,7 +237,7 @@ function setCus(cb) {
 	},
 	success: function(obj){
 		console.log(parm, obj)
-		var t = setTimeout(getSchedule, 1200)
+		getSchedule()
 		if(cb) cb(obj)
 	}})
 }
@@ -257,7 +264,7 @@ function delCus(cb) {
 	},
 	success: function(obj){
 		console.log(parm, obj)
-		var t = setTimeout(getSchedule, 1200)
+		getSchedule()
 		if(cb) cb(obj)
 	}})
 }
@@ -296,7 +303,7 @@ function setDef(cb) {
 	},
 	success: function(obj){
 		console.log('/sch/def', obj)
-		var t = setTimeout(getSchedule, 1200)
+		getSchedule()
 		if(cb) cb(obj)
 	}})
 }
@@ -351,10 +358,8 @@ function init(){
 }
 
 
-
-
 function poll() {
-	getStatus();
+	getStatus(updateSchHight);
 	var t = setTimeout(poll, 1000)
 }
 
