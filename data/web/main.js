@@ -1,6 +1,7 @@
 'use strict';
 
 var url = 'http://192.168.1.116'
+var key = '0123456789abcdef'
 
 function pand2(i) {
 	var o = i
@@ -212,14 +213,17 @@ function setCus(cb) {
 	console.log('as', t2s(as))
 	console.log('bs', t2s(bs))
 
+	if(w == 7) w = 0
 	as = t2s(as) + 1
 	bs = t2s(bs) + 1
 
-	var parm = '/sch/'
+	var u = '/sch/'
+	var parm = ''
 	if (mid) {
-		parm += 'mod?i=' + (parseInt(mid) + 1) + '&'
+		u += 'mod?'
+		parm += 'i=' + (parseInt(mid) + 1) + '&'
 	} else {
-		parm += 'add?'
+		u += 'add?'
 	}
 	parm += 'w=' + (w+1)
 	parm += '&as=' + as
@@ -227,19 +231,14 @@ function setCus(cb) {
 	parm += '&on=' + (on+1)
 	parm += '&of=' + (of+1)
 
-	$.ajax({
-	url: url + parm,
-	type: 'GET',
-	crossDomain: true,
-	error: function(e){
-		console.log('err', parm, e)
-		msg('Set Output Rule Error', e.status + ' - ' + e.statusText)
-	},
-	success: function(obj){
+	setdata(u, parm, key, function(obj){
 		console.log(parm, obj)
 		getSchedule()
 		if(cb) cb(obj)
-	}})
+	}, function(e){
+		console.log('err', parm, e)
+		msg('Set Output Rule Error', e.status + ' - ' + e.statusText)
+	})
 }
 
 function delCus(cb) {
@@ -252,21 +251,15 @@ function delCus(cb) {
 	if (!mid) {
 		return
 	}
-	var parm = '/sch/rm?i=' + (parseInt(mid) + 1)
-
-	$.ajax({
-	url: url + parm,
-	type: 'GET',
-	crossDomain: true,
-	error: function(e){
-		console.log('err', parm, e)
-		msg('Reome Output Rule Error', e.status + ' - ' + e.statusText)
-	},
-	success: function(obj){
+	var parm = 'i=' + (parseInt(mid) + 1)
+	setdata('/sch/rm?', parm, key, function(obj){
 		console.log(parm, obj)
 		getSchedule()
 		if(cb) cb(obj)
-	}})
+	}, function(e){
+		console.log('err', parm, e)
+		msg('Reome Output Rule Error', e.status + ' - ' + e.statusText)
+	})
 }
 
 function setDef(cb) {
@@ -275,6 +268,7 @@ function setDef(cb) {
 	var w = popup.attr('wid')
 	var wm = {
 		'All': 8,
+		'w7': 1,
 		'w1': 2,
 		'w2': 3,
 		'w3': 4,
@@ -288,24 +282,18 @@ function setDef(cb) {
 	var of = parseInt(popup.find('.param input[n=of]').val()) || 0
 	popup.css('display', 'none')
 
-	var parm = '/sch/def'
-	parm += '?w=' + wm[w]
+	var parm = 'w=' + wm[w]
 	parm += '&on=' + (on+1)
 	parm += '&of=' + (of+1)
 
-	$.ajax({
-	url: url + parm,
-	type: 'GET',
-	crossDomain: true,
-	error: function(e){
-		console.log('/sch/def err', e)
-		msg('Set Default Output Error', e.status + ' - ' + e.statusText)
-	},
-	success: function(obj){
+	setdata('/sch/def?', parm, key, function(obj){
 		console.log('/sch/def', obj)
 		getSchedule()
 		if(cb) cb(obj)
-	}})
+	}, function(e){
+		console.log('/sch/def err', e)
+		msg('Set Default Output Error', e.status + ' - ' + e.statusText)
+	});
 }
 
 function init(){
@@ -368,4 +356,71 @@ $(window).on('load', function(e) {
 	poll()
 	getSchedule()
 })
+
+
+
+function setdata(u, parms, key, cb, errcb) {
+	// parms = 'a=123&i=0'...
+	// u = '/sch/def?'
+	$.ajax({
+	url: url + '/token',
+	type: 'GET',
+	crossDomain: true,
+	error: console.log,
+	success: function(hex){
+		console.log('/token', hex)
+		var iv = aesjs.utils.hex.toBytes(hex);
+		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
+		var keyBytes = aesjs.utils.utf8.toBytes(key);
+
+		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
+		var encryptedBytes = aesCtr.encrypt(parmsBytes);
+
+		parms += '&k=' + aesjs.utils.hex.fromBytes(encryptedBytes);
+
+		$.ajax({
+		url: url + u + parms,
+		type: 'GET',
+		crossDomain: true,
+		error: function(e){
+			console.log('send err', e)
+			if(errcb) errcb(obj)
+		},
+		success: function(obj){
+			console.log('send ret', obj)
+			if(cb) cb(obj)
+		}})
+	}})
+}
+
+function settest(parms, key, cb) {
+	$.ajax({
+	url: url + '/token',
+	type: 'GET',
+	crossDomain: true,
+	error: console.log,
+	success: function(hex){
+		console.log('/token', hex)
+		var iv = aesjs.utils.hex.toBytes(hex);
+		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
+		var keyBytes = aesjs.utils.utf8.toBytes(key);
+
+		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
+		var encryptedBytes = aesCtr.encrypt(parmsBytes);
+
+		parms += '&s=' + aesjs.utils.hex.fromBytes(encryptedBytes);
+
+		$.ajax({
+		url: url + '/check?d=' + parms,
+		type: 'GET',
+		crossDomain: true,
+		error: function(e){
+			console.log('send err', e)
+		},
+		success: function(obj){
+			console.log('send ret', obj)
+			if(cb) cb(obj)
+		}})
+	}})
+}
 

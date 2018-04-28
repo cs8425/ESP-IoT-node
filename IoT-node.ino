@@ -67,7 +67,6 @@ void setup() {
 	WiFi.softAP(AP_SSID, AP_PWD);
 
 	// don't wait, observe time changing when ntp timestamp is received
-
 	settimeofday_cb(time_is_set);
 
 
@@ -78,18 +77,6 @@ void setup() {
 	server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *req){
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));
 	});
-
-	server.on("/key0", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
-		uint32_t dt = millis();
-		const char* hex = getKey();
-		dt = millis() - dt;
-		res->printf("hex:%s\n", hex);
-		res->printf("dt:%u\n", dt);
-
-		req->send(res);
-	});
-
 
 	auth.setKey((uint8_t*)"0123456789abcdef");
 	server.on("/key", HTTP_GET, [](AsyncWebServerRequest *req){
@@ -144,7 +131,7 @@ void setup() {
 			res->printf("%02x", sign.charAt(i));
 		}
 		res->printf("\ndt:%u\n", dt);
-		res->printf("\ncheck:%u\n", ok);
+		res->printf("check:%u\n", ok);
 
 		req->send(res);
 	});
@@ -167,6 +154,7 @@ void setup() {
 		res->printf("pin:%u\n", pin.GetOutput());
 		res->printf("log:%u\n", logs.Count());
 		res->printf("heap:%u\n", ESP.getFreeHeap());
+		res->printf("url:%s\n", req->url().c_str());
 
 		req->send(res);
 	});
@@ -302,6 +290,19 @@ void setupServer(AsyncWebServer& server) {
 
 	});*/
 
+	server.on("/token", HTTP_GET, [](AsyncWebServerRequest *req){
+		req->send(200, "text/plain", auth.GetIVHex());
+	});
+
+	server.on("/test", HTTP_GET, [](AsyncWebServerRequest *req){
+		bool ok = authCheck(req, auth);
+		if (ok) {
+			req->send(200, "text/plain", "check ok!");
+		} else {
+			req->send(200, "text/plain", "check failed!");
+		}
+	});
+
 	server.on("/status", HTTP_GET, [](AsyncWebServerRequest *req){
 		AsyncResponseStream *res = req->beginResponseStream("text/json");
 		unsigned count = sch.Count();
@@ -363,6 +364,14 @@ void setupServer(AsyncWebServer& server) {
 		if(as >= 86400) WERRC(req, 400);
 		if(bs >= 86400) WERRC(req, 400);
 
+		bool ok = authCheck(req, auth);
+		Serial.print(req->url());
+		if (ok) {
+			Serial.println(": check ok");
+		} else {
+			Serial.println(": check failed");
+		}
+
 		int idx = sch.Add(daytime{w, as}, daytime{w, bs}, mode{on, of});
 		req->send(200, "text/plain", String(idx));
 	});
@@ -387,6 +396,14 @@ void setupServer(AsyncWebServer& server) {
 		if(as >= 86400) WERRC(req, 400);
 		if(bs >= 86400) WERRC(req, 400);
 
+		bool ok = authCheck(req, auth);
+		Serial.print(req->url());
+		if (ok) {
+			Serial.println(": check ok");
+		} else {
+			Serial.println(": check failed");
+		}
+
 		bool ret = sch.Mod(i, daytime{w, as}, daytime{w, bs}, mode{on, of});
 		req->send(200, "text/plain", String(ret));
 	});
@@ -394,6 +411,14 @@ void setupServer(AsyncWebServer& server) {
 	server.on("/sch/rm", HTTP_GET, [](AsyncWebServerRequest *req){
 		PARAM_CHECK("i");
 		unsigned idx = PARAM_GET_INT("i") - 1;
+
+		bool ok = authCheck(req, auth);
+		Serial.print(req->url());
+		if (ok) {
+			Serial.println(": check ok");
+		} else {
+			Serial.println(": check failed");
+		}
 
 		req->send(200, "text/plain", String(sch.Del(idx)));
 	});
@@ -406,6 +431,14 @@ void setupServer(AsyncWebServer& server) {
 		unsigned w = PARAM_GET_INT("w") - 1;
 		unsigned on = PARAM_GET_INT("on") - 1;
 		unsigned of = PARAM_GET_INT("of") - 1;
+
+		bool ok = authCheck(req, auth);
+		Serial.print(req->url());
+		if (ok) {
+			Serial.println(": check ok");
+		} else {
+			Serial.println(": check failed");
+		}
 
 		if(w <= 7) {
 			sch.SetDefaultMode(w, on, of);
@@ -421,6 +454,15 @@ void setupServer(AsyncWebServer& server) {
 
 		unsigned on = PARAM_GET_INT("on") - 1;
 		unsigned of = PARAM_GET_INT("of") - 1;
+
+		bool ok = authCheck(req, auth);
+		Serial.print(req->url());
+		if (ok) {
+			Serial.println(": check ok");
+		} else {
+			Serial.println(": check failed");
+		}
+
 		pin.SetMode(on, of);
 
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));

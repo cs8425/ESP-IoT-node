@@ -1,6 +1,8 @@
 #ifndef __WEB_HPP_
 #define __WEB_HPP_
 
+#include "auth.hpp"
+
 #define WERR(req) { \
 	(req)->send(500); \
 	return; \
@@ -35,16 +37,29 @@
 
 #define PARAM_GET_STR(x, def) ( (req->hasParam( (x) )) ? req->getParam( (x) )->value() : (def) )
 
-bool authCheck(AsyncWebServerRequest *req, String& val) {
+bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 	if (!req->hasParam("k")) {
 		return false;
 	}
+	String sign = req->getParam("k")->value();
 
-	String key = req->getParam("k")->value();
-	if (key != val) {
-		return false;
+	String param;
+	param.reserve(sign.length());
+
+	int params = req->params();
+	for(int i=0; i<params; i++){
+		AsyncWebParameter* p = req->getParam(i);
+		param += p->name() + "=" + p->value();
+		if (i != params-1) param += "&";
 	}
-	return true;
+	Serial.printf("param[%d]:%s\n", param.length(), param.c_str());
+	Serial.printf("sign0[%d]:%s\n", sign.length(), sign.c_str());
+
+	bool ok = auth.CheckKeyHex((uint8_t*)sign.c_str(), sign.length(), (uint8_t*)param.c_str());
+
+	Serial.printf("sign[%d]:%s\n", sign.length(), sign.c_str());
+
+	return ok;
 }
 
 #define MAX_RNG_TRY 8
@@ -71,23 +86,6 @@ void RNG(uint8_t *dest, unsigned size) {
 		++dest;
 		--size;
 	}
-}
-
-//#define IV_SIZE 32
-const char* HEXMAP = "0123456789abcdef";
-const char* getKey() {
-	static uint8_t keyByte[IV_SIZE] = {0};
-	static char keyHex[IV_SIZE*2 + 1] = {0};
-
-	RNG(keyByte, IV_SIZE);
-
-	unsigned i,j;
-	for (i=0,j=0; i<IV_SIZE; i++, j+=2) {
-		keyHex[j] = HEXMAP[ (keyByte[i] >> 4) & 0xf ];
-		keyHex[j+1] = HEXMAP[ keyByte[i] & 0xf ];
-	}
-
-	return keyHex;
 }
 
 #endif //__WEB_HPP_
