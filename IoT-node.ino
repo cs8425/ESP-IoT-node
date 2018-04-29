@@ -12,7 +12,8 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
-//#include "micro-ecc/uECC.h"
+#include "Adafruit_BME280.h"
+
 #include "config.h"
 #include "util.hpp"
 #include "schedule.hpp"
@@ -35,6 +36,7 @@ void time_is_set (void) {
 	Serial.println("\n------------------ settimeofday() was called ------------------");
 }
 
+Adafruit_BME280 bme;
 
 Log logs;
 
@@ -48,11 +50,16 @@ AsyncWebServer server(80);
 void setup() {
 	Serial.begin(115200);
 
-	EEPROM.begin(512);
+	bool status = bme.begin(0x76);
+	if (!status) {
+		Serial.println("Could not find a valid BME280 sensor, check wiring!");
+	}
 
+	SPIFFS.begin();
+
+	// TODO: load from SPIFFS
 	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
 
-	// TODO: load from EEPROM
 	for(uint8_t i=0; i<7; i++){
 		sch.SetDefaultMode(i, i, i+1);
 	}
@@ -64,13 +71,13 @@ void setup() {
 	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
 	WiFi.mode(WIFI_AP_STA);
 	WiFi.begin(STA_SSID, STA_PWD);
-	WiFi.softAP(AP_SSID, AP_PWD);
+	WiFi.softAP(AP_SSID, AP_PWD); // ssid, passphrase = NULL, channel = 1, ssid_hidden = 0
+
+	auth.setKey((uint8_t*)"0123456789abcdef");
+
 
 	// don't wait, observe time changing when ntp timestamp is received
 	settimeofday_cb(time_is_set);
-
-
-	SPIFFS.begin();
 
 	setupServer(server);
 
@@ -78,7 +85,6 @@ void setup() {
 		req->send(200, "text/plain", String(ESP.getFreeHeap()));
 	});
 
-	auth.setKey((uint8_t*)"0123456789abcdef");
 	server.on("/key", HTTP_GET, [](AsyncWebServerRequest *req){
 		AsyncResponseStream *res = req->beginResponseStream("text/plain");
 		uint32_t dt = millis();
@@ -155,6 +161,8 @@ void setup() {
 		res->printf("log:%u\n", logs.Count());
 		res->printf("heap:%u\n", ESP.getFreeHeap());
 		res->printf("url:%s\n", req->url().c_str());
+		res->printf("EspId:%x\n", ESP.getChipId());
+		res->printf("CpuFreq:%x\n", ESP.getCpuFreqMHz());
 
 		req->send(res);
 	});
@@ -249,8 +257,16 @@ void loop() {
 		Serial.println("\n\n");
 
 
+		float temp = bme.readTemperature();
+		float hum = bme.readHumidity();
+		Serial.printf("Temperature = %f C\n", temp);
+		Serial.printf("Humidity = %f %%\n", hum);
+
+		Serial.printf("Pressure = %f hPa\n", bme.readPressure() / 100.0f);
+
 		//logs.Add(ESP.getFreeHeap() / 10, pin.GetOutput());
-		logs.Add(ESP.getFreeHeap() / 10, now_ms / 1000);
+		//logs.Add(ESP.getFreeHeap() / 10, now_ms / 1000);
+		logs.Add(temp * 100.0f, hum * 4.0f);
 	}
 
 }

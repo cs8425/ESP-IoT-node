@@ -61,7 +61,7 @@ function updateStatusEle(e, o) {
 	}
 	if(o.sen) {
 		e.temp.text( o.sen[0] / 100.0 )
-		e.hum.text( o.sen[1] / 100.0 )
+		e.hum.text( o.sen[1] / 4.0 )
 	}
 }
 

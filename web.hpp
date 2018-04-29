@@ -3,6 +3,9 @@
 
 #include "auth.hpp"
 
+// we won't have too long data to check
+#define MAX_PARAM_LEN 256
+
 #define WERR(req) { \
 	(req)->send(500); \
 	return; \
@@ -43,12 +46,19 @@ bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 	}
 	String sign = req->getParam("k")->value();
 
+	if (sign.length() > MAX_PARAM_LEN) {
+		return false;
+	}
+
 	String param;
 	param.reserve(sign.length());
 
 	int params = req->params();
-	for(int i=0; i<params; i++){
+	for (int i=0; i<params; i++) {
 		AsyncWebParameter* p = req->getParam(i);
+
+		if (p->name() == "k") continue;
+
 		param += p->name() + "=" + p->value();
 		if (i != params-1) param += "&";
 	}

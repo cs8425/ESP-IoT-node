@@ -108,5 +108,5 @@ class Auth {
 
 const char *Auth::HEXMAP = "0123456789abcdef";
 
-#endif //__WEB_HPP_
+#endif //__AUTH_HPP_
 
