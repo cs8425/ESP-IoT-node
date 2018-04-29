@@ -22,18 +22,9 @@
 /***************************************************************************
  PRIVATE FUNCTIONS
  ***************************************************************************/
-Adafruit_BME280::Adafruit_BME280()
-	: _cs(-1), _mosi(-1), _miso(-1), _sck(-1)
-{ }
+Adafruit_BME280::Adafruit_BME280() {
 
-Adafruit_BME280::Adafruit_BME280(int8_t cspin)
-	: _cs(cspin), _mosi(-1), _miso(-1), _sck(-1)
-{ }
-
-Adafruit_BME280::Adafruit_BME280(int8_t cspin, int8_t mosipin, int8_t misopin, int8_t sckpin)
-	: _cs(cspin), _mosi(mosipin), _miso(misopin), _sck(sckpin)
-{ }
-
+}
 
 /**************************************************************************/
 /*!
@@ -70,23 +61,8 @@ bool Adafruit_BME280::begin(void)
 
 bool Adafruit_BME280::init()
 {
-	// init I2C or SPI sensor interface
-	if (_cs == -1) {
-		// I2C
-		_wire -> begin();
-	} else {
-		digitalWrite(_cs, HIGH);
-		pinMode(_cs, OUTPUT);
-		if (_sck == -1) {
-			// hardware SPI
-			SPI.begin();
-		} else {
-			// software SPI
-			pinMode(_sck, OUTPUT);
-			pinMode(_mosi, OUTPUT);
-			pinMode(_miso, INPUT);
-		}
-	}
+	// I2C
+	_wire -> begin();
 
 	// check if sensor, i.e. the chip ID is correct
 	if (read8(BME280_REGISTER_CHIPID) != 0x60)
@@ -148,47 +124,14 @@ void Adafruit_BME280::setSampling(sensor_mode       mode,
 
 /**************************************************************************/
 /*!
-    @brief  Encapsulate hardware and software SPI transfer into one function
-*/
-/**************************************************************************/
-uint8_t Adafruit_BME280::spixfer(uint8_t x) {
-	// hardware SPI
-	if (_sck == -1) return SPI.transfer(x);
-
-	// software SPI
-	uint8_t reply = 0;
-	for (int i=7; i>=0; i--) {
-		reply <<= 1;
-		digitalWrite(_sck, LOW);
-		digitalWrite(_mosi, x & (1<<i));
-		digitalWrite(_sck, HIGH);
-		if (digitalRead(_miso)) reply |= 1;
-	}
-	return reply;
-}
-
-
-/**************************************************************************/
-/*!
     @brief  Writes an 8 bit value over I2C or SPI
 */
 /**************************************************************************/
 void Adafruit_BME280::write8(byte reg, byte value) {
-	if (_cs == -1) {
-		_wire -> beginTransmission((uint8_t)_i2caddr);
-		_wire -> write((uint8_t)reg);
-		_wire -> write((uint8_t)value);
-		_wire -> endTransmission();
-	} else {
-		if (_sck == -1) SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-
-		digitalWrite(_cs, LOW);
-		spixfer(reg & ~0x80); // write, bit 7 low
-		spixfer(value);
-		digitalWrite(_cs, HIGH);
-
-		if (_sck == -1) SPI.endTransaction(); // release the SPI bus
-	}
+	_wire -> beginTransmission((uint8_t)_i2caddr);
+	_wire -> write((uint8_t)reg);
+	_wire -> write((uint8_t)value);
+	_wire -> endTransmission();
 }
 
 
@@ -200,22 +143,11 @@ void Adafruit_BME280::write8(byte reg, byte value) {
 uint8_t Adafruit_BME280::read8(byte reg) {
 	uint8_t value;
 
-	if (_cs == -1) {
-		_wire -> beginTransmission((uint8_t)_i2caddr);
-		_wire -> write((uint8_t)reg);
-		_wire -> endTransmission();
-		_wire -> requestFrom((uint8_t)_i2caddr, (byte)1);
-		value = _wire -> read();
-	} else {
-		if (_sck == -1) SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-
-		digitalWrite(_cs, LOW);
-		spixfer(reg | 0x80); // read, bit 7 high
-		value = spixfer(0);
-		digitalWrite(_cs, HIGH);
-
-		if (_sck == -1) SPI.endTransaction(); // release the SPI bus
-	}
+	_wire -> beginTransmission((uint8_t)_i2caddr);
+	_wire -> write((uint8_t)reg);
+	_wire -> endTransmission();
+	_wire -> requestFrom((uint8_t)_i2caddr, (byte)1);
+	value = _wire -> read();
 	return value;
 }
 
@@ -229,22 +161,11 @@ uint16_t Adafruit_BME280::read16(byte reg)
 {
 	uint16_t value;
 
-	if (_cs == -1) {
-		_wire -> beginTransmission((uint8_t)_i2caddr);
-		_wire -> write((uint8_t)reg);
-		_wire -> endTransmission();
-		_wire -> requestFrom((uint8_t)_i2caddr, (byte)2);
-		value = (_wire -> read() << 8) | _wire -> read();
-	} else {
-		if (_sck == -1) SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-
-		digitalWrite(_cs, LOW);
-		spixfer(reg | 0x80); // read, bit 7 high
-		value = (spixfer(0) << 8) | spixfer(0);
-		digitalWrite(_cs, HIGH);
-
-		if (_sck == -1) SPI.endTransaction(); // release the SPI bus
-	}
+	_wire -> beginTransmission((uint8_t)_i2caddr);
+	_wire -> write((uint8_t)reg);
+	_wire -> endTransmission();
+	_wire -> requestFrom((uint8_t)_i2caddr, (byte)2);
+	value = (_wire -> read() << 8) | _wire -> read();
 
 	return value;
 }
@@ -290,37 +211,20 @@ int16_t Adafruit_BME280::readS16_LE(byte reg)
 /**************************************************************************/
 uint32_t Adafruit_BME280::read24(byte reg)
 {
-    uint32_t value;
+	uint32_t value;
 
-    if (_cs == -1) {
-        _wire -> beginTransmission((uint8_t)_i2caddr);
-        _wire -> write((uint8_t)reg);
-        _wire -> endTransmission();
-        _wire -> requestFrom((uint8_t)_i2caddr, (byte)3);
+	_wire -> beginTransmission((uint8_t)_i2caddr);
+	_wire -> write((uint8_t)reg);
+	_wire -> endTransmission();
+	_wire -> requestFrom((uint8_t)_i2caddr, (byte)3);
 
-        value = _wire -> read();
-        value <<= 8;
-        value |= _wire -> read();
-        value <<= 8;
-        value |= _wire -> read();
-    } else {
-        if (_sck == -1)
-            SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-        digitalWrite(_cs, LOW);
-        spixfer(reg | 0x80); // read, bit 7 high
+	value = _wire -> read();
+	value <<= 8;
+	value |= _wire -> read();
+	value <<= 8;
+	value |= _wire -> read();
 
-        value = spixfer(0);
-        value <<= 8;
-        value |= spixfer(0);
-        value <<= 8;
-        value |= spixfer(0);
-
-        digitalWrite(_cs, HIGH);
-        if (_sck == -1)
-            SPI.endTransaction(); // release the SPI bus
-    }
-
-    return value;
+	return value;
 }
 
 
@@ -479,45 +383,4 @@ float Adafruit_BME280::readHumidity(void) {
 }
 
 
-/**************************************************************************/
-/*!
-    Calculates the altitude (in meters) from the specified atmospheric
-    pressure (in hPa), and sea-level pressure (in hPa).
 
-    @param  seaLevel      Sea-level pressure in hPa
-    @param  atmospheric   Atmospheric pressure in hPa
-*/
-/**************************************************************************/
-float Adafruit_BME280::readAltitude(float seaLevel)
-{
-	// Equation taken from BMP180 datasheet (page 16):
-	//  http://www.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
-
-	// Note that using the equation from wikipedia can give bad results
-	// at high altitude. See this thread for more information:
-	//  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
-
-	float atmospheric = readPressure() / 100.0F;
-	return 44330.0 * (1.0 - pow(atmospheric / seaLevel, 0.1903));
-}
-
-
-/**************************************************************************/
-/*!
-    Calculates the pressure at sea level (in hPa) from the specified altitude 
-    (in meters), and atmospheric pressure (in hPa).  
-    @param  altitude      Altitude in meters
-    @param  atmospheric   Atmospheric pressure in hPa
-*/
-/**************************************************************************/
-float Adafruit_BME280::seaLevelForAltitude(float altitude, float atmospheric)
-{
-	// Equation taken from BMP180 datasheet (page 17):
-	//  http://www.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
-
-	// Note that using the equation from wikipedia can give bad results
-	// at high altitude. See this thread for more information:
-	//  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
-
-	return atmospheric / pow(1.0 - (altitude/44330.0), 5.255);
-}

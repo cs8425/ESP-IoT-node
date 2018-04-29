@@ -139,8 +139,6 @@ public:
     
 	// constructors
 	Adafruit_BME280(void);
-	Adafruit_BME280(int8_t cspin);
-	Adafruit_BME280(int8_t cspin, int8_t mosipin, int8_t misopin, int8_t sckpin);
 
 	bool begin(void);
 	bool begin(TwoWire *theWire);
@@ -161,15 +159,12 @@ public:
 	float readPressure(void);
 	float readHumidity(void);
 
-	float readAltitude(float seaLevel);
-	float seaLevelForAltitude(float altitude, float pressure);
 
         
 private:
 	TwoWire *_wire;
 	void readCoefficients(void);
 	bool isReadingCalibration(void);
-	uint8_t spixfer(uint8_t x);
 
 	void      write8(byte reg, byte value);
 	uint8_t   read8(byte reg);
@@ -180,10 +175,7 @@ private:
 	int16_t   readS16_LE(byte reg); // little endian
 
 	uint8_t   _i2caddr;
-	int32_t   _sensorID;
 	int32_t   t_fine;
-
-	int8_t _cs, _mosi, _miso, _sck;
 
 	bme280_calib_data _bme280_calib;
 
