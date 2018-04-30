@@ -100,6 +100,8 @@ typedef struct {
 } bme280_calib_data;
 /*=========================================================================*/
 
+#define ERR_DATA (0x7FFFFFFF)
+
 class Adafruit_BME280 {
 public:
 	enum sensor_sampling {
@@ -156,8 +158,11 @@ public:
 		   
 	void takeForcedMeasurement();
 	float readTemperature(void);
+	int32_t readTemperatureInt(void);
 	float readPressure(void);
+	int32_t readPressureInt(void);
 	float readHumidity(void);
+	int32_t readHumidityInt(void);
 
 
         

@@ -1,7 +1,6 @@
 'use strict';
 
 var url = ''
-$('#key').val('123456')
 
 function pand2(i) {
 	var o = i
@@ -31,7 +30,7 @@ function mkStatus() {
 	var out = {}
 	out.e = e
 
-	var p = ["temp", "hum", "pin", "on", "off", "heap"]
+	var p = ["temp", "hum", "press", "pin", "on", "off", "heap"]
 	p.forEach(function(v,k){
 		//console.log(k,v)
 		out[v] = e.find('div:nth-child(' + (k+1)+ ') > div:nth-child(2)')
@@ -58,8 +57,9 @@ function updateStatusEle(e, o) {
 		e.off.text( o.md[1] )
 	}
 	if(o.sen) {
-		e.temp.text( o.sen[0] / 100.0 )
+		e.temp.text( o.sen[0] / 32.0 )
 		e.hum.text( o.sen[1] / 40.0 )
+		e.press.text( (o.sen[2] / 200.0) + 1013.0 )
 	}
 }
 
@@ -92,7 +92,6 @@ function setSetting(parms, cb) {
 		console.log('/token', hex)
 		var iv = aesjs.utils.hex.toBytes(hex);
 		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
-		//var keyBytes = aesjs.utils.utf8.toBytes(key);
 		var keyBytes = aesjs.utils.hex.toBytes(key);
 
 		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
@@ -430,6 +429,8 @@ function init(){
 			getSetting()
 		})
 	})
+
+	$('#key').val(localStorage.getItem('key'))
 }
 
 
@@ -459,7 +460,6 @@ function setdata(u, parms, cb, errcb) {
 		console.log('/token', hex)
 		var iv = aesjs.utils.hex.toBytes(hex);
 		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
-		//var keyBytes = aesjs.utils.utf8.toBytes(key);
 		var keyBytes = aesjs.utils.hex.toBytes(key);
 
 		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));

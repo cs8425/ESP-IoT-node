@@ -84,10 +84,6 @@ class Settings {
 
 			if (sta_ssid.length() > 0 && sta_ssid.length() < 32) STA_ssid = sta_ssid;
 			if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) STA_pwd = sta_pwd;
-			/*AP_ssid = ap_ssid.c_str();
-			AP_pwd = ap_pwd.c_str();
-			STA_ssid = sta_ssid.c_str();
-			STA_pwd = sta_pwd.c_str();*/
 
 			if ((chan > 0) && (chan <= 14) ){
 				AP_chan = chan;

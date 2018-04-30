@@ -36,6 +36,7 @@ void time_is_set (void) {
 Adafruit_BME280 bme;
 
 Log logs;
+log_t newest_log;
 
 Scheduler sch;
 Mode pin;
@@ -108,10 +109,8 @@ void setup() {
 
 		//res->printf("tsk:%u\n", tsk.GetTaskId());
 
-		const log_t* data = logs.GetLatest(1);
-		if (data != nullptr) {
-			res->printf("sen:%d,%d\n", data->temp, data->hum);
-		}
+		const log_t* data = &newest_log;
+		res->printf("sen:%d,%d,%d\n", data->temp, data->hum, data->press);
 
 		res->printf("pin:%u\n", pin.GetOutput());
 		res->printf("log:%u\n", logs.Count());
@@ -201,16 +200,25 @@ void loop() {
 		Serial.println("\n\n");
 
 
-		float temp = bme.readTemperature();
-		float hum = bme.readHumidity();
-		Serial.printf("Temperature = %f C\n", temp);
-		Serial.printf("Humidity = %f %%\n", hum);
+		int32_t temp = bme.readTemperatureInt();
+		int32_t hum = bme.readHumidityInt();
+		int32_t press = bme.readPressureInt();
+		Serial.printf("Temperature = %f C\n", temp / 100.0f);
+		Serial.printf("Humidity = %f %%\n", hum / 1024.0f);
 
-		Serial.printf("Pressure = %f hPa\n", bme.readPressure() / 100.0f);
+		Serial.printf("Pressure = %f hPa\n\n\n", press / 25600.0f);
 
-		logs.Add(temp * 100.0f, hum * 40.0f);
+		newest_log.temp = (temp << 5) / 100;
+		newest_log.hum = (hum >> 8) * 10;
+		newest_log.press = (press >> 7) - 101300*2;
 
-		Serial.println("\n\n");
+		static unsigned log_denom = 0;
+		if (log_denom == 0) {
+			//logs.Add(newest_log.temp, newest_log.hum, newest_log.press);
+			logs.Add(newest_log);
+			log_denom = 60;
+		}
+		log_denom--;
 	}
 
 	// 5 times 'R' to reset config
@@ -314,10 +322,9 @@ void setupServer(AsyncWebServer& server) {
 		int16_t mid = sch.GetModeId();
 		res->printf("{\"mid\":%d,\"md\":[%d,%d],\"count\":%u,", mid, m->on, m->off, count);
 
-		const log_t* data = logs.GetLatest(1);
-		if (data != nullptr) {
-			res->printf("\"sen\":[%d,%d],", data->temp, data->hum);
-		}
+		const log_t* data = &newest_log;
+		res->printf("\"sen\":[%d,%d,%d],", data->temp, data->hum, data->press);
+
 
 		res->printf("\"pin\":%u,", pin.GetOutput());
 		res->printf("\"log\":%u,", logs.Count());
@@ -476,7 +483,7 @@ void setupServer(AsyncWebServer& server) {
 			while (ret < maxLen - 16) {
 				if(vars[0] < count){
 					const log_t* data = logs.Get(vars[0]);
-					ret += res->printf("%u,%d,%d\n", vars[0], data->temp, data->hum);
+					ret += res->printf("%u,%d,%d,%d\n", vars[0], data->temp, data->hum, data->press);
 					vars[0] += 1;
 				} else {
 					Serial.print("count = ");
@@ -512,7 +519,7 @@ void setupServer(AsyncWebServer& server) {
 
 			if(vars[0] < count){
 				const log_t* data = logs.GetLatest(vars[0]);
-				res->printf("%d,%d\n", data->temp, data->hum);
+				res->printf("%d,%d,%d\n", data->temp, data->hum, data->press);
 				vars[0] += 1;
 			} else {
 				delete vars;

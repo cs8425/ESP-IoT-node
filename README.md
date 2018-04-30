@@ -14,22 +14,23 @@ All setting must be signed by key otherwise will be ignore (WIP, plan to use ECD
   - [x] schedule output
   - [x] log dump
   - [ ] task
-  - [ ] wifi/esp setting
+  - [x] wifi/esp setting
 - [ ] Web UI
   - [x] schedule output setting
   - [ ] log viewer
   - [ ] task setting
-  - [ ] wifi/esp setting
+  - [x] wifi/esp setting
 - [ ] signature for any setting
   - [x] schedule
-  - [ ] wifi
-  - [ ] password/key
+  - [x] wifi/esp setting
+  - [x] password/key
+  - [ ] task
 - [ ] save/load to SPIFFS
-  - [ ] settings
+  - [x] settings
   - [ ] schedule
   - [ ] task
 - [ ] multi output pin with schedule
-- [ ] random number generator (entropy pool)
+- [x] ~~random number generator (entropy pool)~~ use `os_get_random()` from SDK
 - [ ] Wifi scan add join via Web UI
 
 

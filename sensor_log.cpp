@@ -5,7 +5,7 @@ Log::Log() {
 	tail = 0;
 }
 
-void Log::Add(uint16_t temp, uint16_t hum) {
+void Log::next() {
 	uint16_t i = (uint16_t)(head + 1);
 
 	if(i == MAX_LOG_COUNT) i = 0;
@@ -16,9 +16,19 @@ void Log::Add(uint16_t temp, uint16_t hum) {
 		if(tail == MAX_LOG_COUNT) tail = 0;
 	}
 
+	head = i;
+}
+
+/*void Log::Add(uint16_t temp, uint16_t hum, uint16_t press) {
 	_log[head].temp = temp;
 	_log[head].hum = hum;
-	head = i;
+	_log[head].press = press;
+	next();
+}*/
+
+void Log::Add(log_t log) {
+	_log[head] = log;
+	next();
 }
 
 uint16_t Log::Count() {

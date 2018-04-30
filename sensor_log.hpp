@@ -15,18 +15,23 @@ struct log_t {
 
 	// humidity
 	unsigned int hum : 12;
+
+	// pressure (delta)
+	signed int press : 16;
 } __attribute__((packed));
 
 class Log {
 	public:
 		Log();
 
-		void Add(uint16_t temp, uint16_t hum);
+		//void Add(uint16_t temp, uint16_t hum, uint16_t press);
+		void Add(log_t log);
 		log_t* Get(uint16_t idx); // 0 >> oldest
 		log_t* GetLatest(uint16_t idx); // 0 >> latest
 		uint16_t Count();
 
 	private:
+		void next();
 		uint16_t head;
 		uint16_t tail;
 
