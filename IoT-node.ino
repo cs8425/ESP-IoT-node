@@ -122,7 +122,8 @@ void setup() {
 		req->send(res);
 	});
 
-	server.serveStatic("/", SPIFFS, "/web/").setDefaultFile("index.html");
+	const char * buildTime = __DATE__ " " __TIME__ " GMT";
+	server.serveStatic("/", SPIFFS, "/web/").setDefaultFile("index.html").setLastModified(buildTime);
 
 	server.onNotFound([](AsyncWebServerRequest *request){
 		request->send(404);
@@ -449,26 +450,6 @@ void setupServer(AsyncWebServer& server) {
 			sch.SetDefaultMode(on, of);
 		}
 		req->send(200, "text/plain", "ok");
-	});
-
-	server.on("/mode", HTTP_GET, [](AsyncWebServerRequest *req){
-		PARAM_CHECK("on");
-		PARAM_CHECK("of");
-
-		unsigned on = PARAM_GET_INT("on") - 1;
-		unsigned of = PARAM_GET_INT("of") - 1;
-
-		bool ok = authCheck(req, auth);
-		Serial.print(req->url());
-		if (ok) {
-			Serial.println(": check ok");
-		} else {
-			Serial.println(": check failed");
-		}
-
-		pin.SetMode(on, of);
-
-		req->send(200, "text/plain", String(ESP.getFreeHeap()));
 	});
 
 	server.on("/log/all", HTTP_GET, [](AsyncWebServerRequest *req){
