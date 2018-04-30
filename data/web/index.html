@@ -11,7 +11,7 @@
 	<div class="btn">Status</div>
 	<div class="btn">Schedule</div>
 	<div class="btn hide">Tasks</div>
-	<div class="btn hide">Logs</div>
+	<div class="btn">Logs</div>
 	<div class="btn">Settings</div>
 </div>
 <div class="tabs">
@@ -41,9 +41,15 @@
 	<div class="block tasks hide">
 	</div>
 
+	<div class="block logs" id="logs">
+		<canvas id="temp-chart" style="width:100%;height:25vh"></canvas>
+		<canvas id="hum-chart" style="width:100%;height:25vh"></canvas>
+		<canvas id="press-chart" style="width:100%;height:25vh"></canvas>
+	</div>
+
 	<div class="block param" id="settings">
 		<div><div>Key:</div>&nbsp;<input type="password" id="key" /><div class="btn">Load from local</div><div class="btn">Save to local</div></div>
-		<div><div>New Key:</div>&nbsp;<input type="password" id="key2" /><div class="btn">generate new</div><div class="btn">Save to local</div></div>
+		<div><div>New Key:</div>&nbsp;<input type="password" id="key2" /><div class="btn">generate new</div></div>
 		<div><div>WiFi Mode:</div>&nbsp;<div><select id="wifi-mode"><option value="3">AP+STA</option><option value="2">AP</option><option value="1">STA</option></select></div></div>
 		<div><div>WiFi AP SSID:</div>&nbsp;<input type="text" id="ap-ssid" placeholder="ESP..." /></div>
 		<div><div>WiFi AP Password:</div>&nbsp;<input type="password" id="ap-pwd" /></div>
@@ -106,6 +112,7 @@
 </body>
 <script src="aes-js.js"></script>
 <script src="sha256.min.js"></script>
+<script src="smoothie.js"></script>
 <script src="jquery.min.js"></script>
 <script src="main.js"></script>
 </html>

@@ -1,6 +1,6 @@
 'use strict';
 
-var url = ''
+var url = 'http://192.168.1.116'
 
 function pand2(i) {
 	var o = i
@@ -16,6 +16,14 @@ function toTimeStr(t) {
 	return hh + ':' + mm + ':' + ss
 }
 
+function round2(i) {
+	var n = Math.round(parseFloat(i) * 100)
+	var sub = n % 100
+	var out = sub
+	if (sub < 10) {out = "0" + out}
+	return Math.round(n / 100.0) + '.' + out
+}
+
 function msg(hdr, str) {
 	var e = $('#msg')
 	e.find('div.header > h2').text(hdr)
@@ -23,6 +31,11 @@ function msg(hdr, str) {
 	e.css('display', 'block')
 }
 
+var logs = {
+	temp: new TimeSeries(),
+	hum: new TimeSeries(),
+	press: new TimeSeries(),
+}
 
 var stEle = mkStatus()
 function mkStatus() {
@@ -57,9 +70,17 @@ function updateStatusEle(e, o) {
 		e.off.text( o.md[1] )
 	}
 	if(o.sen) {
-		e.temp.text( o.sen[0] / 32.0 )
-		e.hum.text( o.sen[1] / 40.0 )
-		e.press.text( (o.sen[2] / 200.0) + 1013.0 )
+		var temp = o.sen[0] / 32.0
+		var hum = o.sen[1] / 40.0
+		var press = (o.sen[2] / 200.0) + 1013.0
+		e.temp.text( round2(temp) )
+		e.hum.text( round2(hum) )
+		e.press.text( round2(press) )
+
+		var now = new Date().getTime()
+		logs.temp.append(now, temp)
+		logs.hum.append(now, hum)
+		logs.press.append(now, press)
 	}
 }
 
@@ -361,6 +382,7 @@ function init(){
 		$('#' + id).css('display', 'block')
 		if(id == 'schedule') getSchedule()
 		if(id == 'settings') getSetting()
+		if(id == 'logs') getLogs()
 	})
 
 	// bind default setting handler
@@ -431,13 +453,59 @@ function init(){
 	})
 
 	$('#key').val(localStorage.getItem('key'))
+
+	// log
+	var genChart = function(id, series, style) {
+		var chart = new SmoothieChart({responsive:true,millisPerPixel:1000,grid:{millisPerLine:300000},interpolation:'linear',tooltip:true,timestampFormatter:SmoothieChart.timeFormatter});
+		var canvas = document.getElementById(id);
+		chart.addTimeSeries(series, style);
+		chart.streamTo(canvas, 500);
+	}
+
+	genChart('temp-chart', logs.temp, {lineWidth:2,strokeStyle:'#00ff00'})
+	genChart('hum-chart', logs.hum, {lineWidth:2,strokeStyle:'#0088ff',fillStyle:'rgba(0, 136, 255, 0.2)'})
+	genChart('press-chart', logs.press, {lineWidth:2,strokeStyle:'#00ff00',fillStyle:'rgba(0, 255, 0, 0.2)'})
 }
 
+function getLogs(cb) {
+	$.ajax({
+	url: url + '/log/all',
+	type: 'GET',
+	crossDomain: true,
+	error: console.log,
+	success: function(obj){
+		//console.log('/log/all', obj)
+
+		var lines = obj.split('\n')
+		var count = parseInt(lines[0])
+		//lines.shift()
+		var now = new Date().getTime()
+		var l = []
+		for(var i=1; i<=count; i++) {
+			var d = lines[i].split(',')
+
+			var temp = d[1] / 32.0
+			var hum = d[2] / 40.0
+			var press = (d[3] / 200.0) + 1013.0
+
+			var t = now - 60*1000*(i-1)
+
+			logs.temp.append(t, temp)
+			logs.hum.append(t, hum)
+			logs.press.append(t, press)
+			l.push([t, temp, hum, press])
+		}
+		console.log('/log/all', l)
+
+		if(cb) cb(obj)
+	}})
+}
 
 function poll() {
 	getStatus(updateSchHight);
 	var t = setTimeout(poll, 1000)
 }
+
 
 $(window).on('load', function(e) {
 	init()
