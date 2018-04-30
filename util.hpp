@@ -1,6 +1,18 @@
 #ifndef __UTIL_HPP_
 #define __UTIL_HPP_
 
+
+String readStringUntil(String& str, char terminator) {
+	int index = str.indexOf(terminator);
+	if (index < 0) {
+		index = str.length();
+	}
+	String ret = str.substring(0, index);
+	str = str.substring(index + 1);
+	return ret;
+}
+
+
 // SDK get time from boot up
 extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
 

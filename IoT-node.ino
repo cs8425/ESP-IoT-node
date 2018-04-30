@@ -233,7 +233,7 @@ void loop() {
 
 		//logs.Add(ESP.getFreeHeap() / 10, pin.GetOutput());
 		//logs.Add(ESP.getFreeHeap() / 10, now_ms / 1000);
-		logs.Add(temp * 100.0f, hum * 4.0f);
+		logs.Add(temp * 100.0f, hum * 40.0f);
 
 		Serial.println("\n\n");
 	}
@@ -288,16 +288,42 @@ void setupServer(AsyncWebServer& server) {
 		//ESP.restart();
 	});
 	server.on("/setting", HTTP_POST, [](AsyncWebServerRequest *req){
-		PARAM_CHECK("c");
-		String c = req->getParam("c")->value().c_str();
+		if(!req->hasParam("c", true)) {
+			WRET_PARAM_ERR(req);
+			return;
+		}
+		String c = req->getParam("c", true)->value();
+		if (c.length() > MAX_POST_LEN) {
+			WRET_PARAM_ERR(req);
+			return;
+		}
 
 		Serial.printf("config(%d) = %s\n", c.length(), c.c_str());
 		String buf = auth.CodeHex2Byte((uint8_t*)c.c_str(), c.length());
 		auth.SetGenerate(true);
-
 		Serial.printf("buf(%d) = %s\n", buf.length(), buf.c_str());
 
-		req->send(200, "text/plain", c);
+		int mode = readStringUntil(buf, '\n').toInt();
+		String ap_ssid = readStringUntil(buf, '\n');
+		String ap_pwd = readStringUntil(buf, '\n');
+		int chan = readStringUntil(buf, '\n').toInt();
+		int hidden = readStringUntil(buf, '\n').toInt();
+		String sta_ssid = readStringUntil(buf, '\n');
+		String sta_pwd = readStringUntil(buf, '\n');
+
+		config.WiFi_mode = (WiFiMode_t) mode;
+		config.AP_ssid = ap_ssid;
+		config.AP_pwd = ap_pwd;
+		config.AP_chan = chan;
+		config.AP_hidden = hidden;
+		config.STA_ssid = sta_ssid;
+		config.STA_pwd = sta_pwd;
+
+		Serial.printf("\n\nWiFi Mode = %d\n", config.WiFi_mode);
+		Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
+		Serial.printf("STA_SSID = %s, STA_PWD = %s\n\n\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
+
+		req->send(200, "text/plain", buf);
 	});
 
 	server.on("/token", HTTP_GET, [](AsyncWebServerRequest *req){
@@ -375,11 +401,9 @@ void setupServer(AsyncWebServer& server) {
 		if(bs >= 86400) WERRC(req, 400);
 
 		bool ok = authCheck(req, auth);
-		Serial.print(req->url());
-		if (ok) {
-			Serial.println(": check ok");
-		} else {
-			Serial.println(": check failed");
+		if (!ok) {
+			WRET_AUTH_ERR(req);
+			return;
 		}
 
 		int idx = sch.Add(daytime{w, as}, daytime{w, bs}, mode{on, of});
@@ -407,11 +431,9 @@ void setupServer(AsyncWebServer& server) {
 		if(bs >= 86400) WERRC(req, 400);
 
 		bool ok = authCheck(req, auth);
-		Serial.print(req->url());
-		if (ok) {
-			Serial.println(": check ok");
-		} else {
-			Serial.println(": check failed");
+		if (!ok) {
+			WRET_AUTH_ERR(req);
+			return;
 		}
 
 		bool ret = sch.Mod(i, daytime{w, as}, daytime{w, bs}, mode{on, of});
@@ -423,11 +445,9 @@ void setupServer(AsyncWebServer& server) {
 		unsigned idx = PARAM_GET_INT("i") - 1;
 
 		bool ok = authCheck(req, auth);
-		Serial.print(req->url());
-		if (ok) {
-			Serial.println(": check ok");
-		} else {
-			Serial.println(": check failed");
+		if (!ok) {
+			WRET_AUTH_ERR(req);
+			return;
 		}
 
 		req->send(200, "text/plain", String(sch.Del(idx)));
@@ -443,11 +463,9 @@ void setupServer(AsyncWebServer& server) {
 		unsigned of = PARAM_GET_INT("of") - 1;
 
 		bool ok = authCheck(req, auth);
-		Serial.print(req->url());
-		if (ok) {
-			Serial.println(": check ok");
-		} else {
-			Serial.println(": check failed");
+		if (!ok) {
+			WRET_AUTH_ERR(req);
+			return;
 		}
 
 		if(w <= 7) {

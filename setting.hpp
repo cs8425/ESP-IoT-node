@@ -38,6 +38,7 @@ class Settings {
 			String sta_pwd = f->readStringUntil('\n');
 			int mode = f->readStringUntil('\n').toInt();
 
+			// TODO: check length
 			AP_ssid = ap_ssid.c_str();
 			AP_pwd = ap_pwd.c_str();
 			STA_ssid = sta_ssid.c_str();

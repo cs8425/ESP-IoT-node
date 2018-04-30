@@ -61,7 +61,7 @@ function updateStatusEle(e, o) {
 	}
 	if(o.sen) {
 		e.temp.text( o.sen[0] / 100.0 )
-		e.hum.text( o.sen[1] / 4.0 )
+		e.hum.text( o.sen[1] / 40.0 )
 	}
 }
 
@@ -411,7 +411,9 @@ function settest(parms, key, cb) {
 		parms = aesjs.utils.hex.fromBytes(encryptedBytes);
 
 		$.ajax({
-		url: url + '/setting?c=' + parms,
+//		url: url + '/setting?c=' + parms,
+		url: url + '/setting',
+		data: 'c=' + parms,
 		type: 'POST',
 		crossDomain: true,
 		error: function(e){
