@@ -1,7 +1,7 @@
 'use strict';
 
 var url = 'http://192.168.1.116'
-$('#key').val('0123456789abcdef')
+$('#key').val('0123456789abcdef' + '0123456789abcdef')
 
 function pand2(i) {
 	var o = i
@@ -402,6 +402,8 @@ function init(){
 		var sta_ssid = $('#sta-ssid').val()
 		var sta_pwd = $('#sta-pwd').val()
 
+		var new_key = $('#key2').val()
+
 		console.log('mode', wm)
 		console.log('AP', ap_ssid, ap_pwd, hide, chan)
 		console.log('STA', sta_ssid, sta_pwd)
@@ -415,6 +417,8 @@ function init(){
 		param += hide + '\n'
 		param += sta_ssid + '\n'
 		param += sta_pwd + '\n'
+
+		param += new_key + '\n'
 
 		console.log('param', param)
 		setSetting(param)

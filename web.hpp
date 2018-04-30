@@ -67,13 +67,16 @@ bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 	}
 
 	String param;
-	param.reserve(sign.length());
+	param.reserve(sign.length()/2);
 
-	int params = req->params();
+	int params = req->params() - 1;
 	for (int i=0; i<params; i++) {
 		AsyncWebParameter* p = req->getParam(i);
 
-		if (p->name() == "k") continue;
+		if (p->name() == "k") {
+			params += 1;
+			continue;
+		}
 
 		param += p->name() + "=" + p->value();
 		if (i != params-1) param += "&";

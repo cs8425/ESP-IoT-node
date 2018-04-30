@@ -17,16 +17,38 @@ class Settings {
 
 		static WiFiMode_t WiFi_mode;
 
+		static String KEY;
+
 		Settings() {
 
 		}
 
 		int Load() {
-			if (!SPIFFS.exists(CONFIG_FILE)) return 1;
+			int ret = LoadConfig();
+			ret += LoadKey();
+
+			return ret;
+		}
+
+		int LoadConfig() {
+			if (!SPIFFS.exists(CONFIG_FILE)) return 0;
 			File f = SPIFFS.open(CONFIG_FILE, "r");
-			if (!f) return 2;
+			if (!f) return 1;
 
 			return Parse(&f);
+		}
+
+		int LoadKey() {
+			if (!SPIFFS.exists(KEY_FILE)) return 0;
+			File f = SPIFFS.open(KEY_FILE, "r");
+			if (!f) return 2;
+
+			String key = f.readStringUntil('\n');
+			if (key.length() == 32) {
+				KEY = key;
+			}
+
+			return 0;
 		}
 
 		int Parse(File* f) {
@@ -38,11 +60,15 @@ class Settings {
 			String sta_pwd = f->readStringUntil('\n');
 			int mode = f->readStringUntil('\n').toInt();
 
-			// TODO: check length
-			AP_ssid = ap_ssid.c_str();
+			if (ap_ssid.length() > 0 && ap_ssid.length() < 32) AP_ssid = ap_ssid;
+			if (ap_pwd.length() >= 8 && ap_pwd.length() < 64) AP_pwd = ap_pwd;
+
+			if (sta_ssid.length() > 0 && sta_ssid.length() < 32) STA_ssid = sta_ssid;
+			if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) STA_pwd = sta_pwd;
+			/*AP_ssid = ap_ssid.c_str();
 			AP_pwd = ap_pwd.c_str();
 			STA_ssid = sta_ssid.c_str();
-			STA_pwd = sta_pwd.c_str();
+			STA_pwd = sta_pwd.c_str();*/
 
 			if ((chan > 0) && (chan <= 14) ){
 				AP_chan = chan;
@@ -73,8 +99,18 @@ class Settings {
 			return 0;
 		}
 
+		int SaveKey() {
+			File f = SPIFFS.open(KEY_FILE, "w+");
+			if (!f) return 1;
+
+			f.printf("%s\n", KEY.c_str());
+			f.close();
+			return 0;
+		}
+
 		void Reset() {
 			SPIFFS.remove(CONFIG_FILE);
+			SPIFFS.remove(KEY_FILE);
 		}
 	private:
 
@@ -89,6 +125,8 @@ String Settings::STA_ssid = STA_SSID;
 String Settings::STA_pwd = STA_PWD;
 
 WiFiMode_t Settings::WiFi_mode = WIFI_MODE;
+
+String Settings::KEY = AES_KEY;
 
 #endif //__SETTING_HPP_
 

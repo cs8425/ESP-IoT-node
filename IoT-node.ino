@@ -68,7 +68,7 @@ void setup() {
 	Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
 	Serial.printf("STA_SSID = %s, STA_PWD = %s\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
 
-
+	Serial.printf("KEY = %s\n", config.KEY.c_str());
 
 	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
 
@@ -87,13 +87,7 @@ void setup() {
 			WiFi.softAP(config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
 			break;
 	}
-
-
-	if (SPIFFS.exists(KEY_FILE)) {
-		// load key
-
-	}
-	auth.setKey((uint8_t*)AES_KEY);
+	auth.setKey((uint8_t*)config.KEY.c_str());
 
 
 
@@ -231,19 +225,24 @@ void loop() {
 
 		Serial.printf("Pressure = %f hPa\n", bme.readPressure() / 100.0f);
 
-		//logs.Add(ESP.getFreeHeap() / 10, pin.GetOutput());
-		//logs.Add(ESP.getFreeHeap() / 10, now_ms / 1000);
 		logs.Add(temp * 100.0f, hum * 40.0f);
 
 		Serial.println("\n\n");
 	}
 
+	// 5 times 'R' to reset config
 	if (Serial.available() > 0) {
+		static uint8_t count = 0;
 		int inByte = Serial.read();
 		if (inByte == 'R') {
-			Serial.println("reset config...");
-			config.Reset();
-			//ESP.restart();
+			count++;
+			if (count >= 5) {
+				Serial.println("reset all config...");
+				config.Reset();
+				//ESP.restart();
+			}
+		} else {
+			count = 0;
 		}
 	}
 }
@@ -297,6 +296,8 @@ void setupServer(AsyncWebServer& server) {
 		String sta_ssid = readStringUntil(buf, '\n');
 		String sta_pwd = readStringUntil(buf, '\n');
 
+		String new_key = readStringUntil(buf, '\n');
+
 
 		if (mode >= 1 && mode <= 3) config.WiFi_mode = (WiFiMode_t) mode;
 
@@ -313,9 +314,15 @@ void setupServer(AsyncWebServer& server) {
 
 		Serial.printf("\n\nWiFi Mode = %d\n", config.WiFi_mode);
 		Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
-		Serial.printf("STA_SSID = %s, STA_PWD = %s\n\n\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
+		Serial.printf("STA_SSID = %s, STA_PWD = %s\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
+		Serial.printf("NEW_KEY(%d) = %s\n\n\n", new_key.length(), new_key.c_str());
 
 		config.Save();
+
+		if (new_key.length() == 32) {
+			config.KEY = new_key;
+			config.SaveKey();
+		}
 
 		req->send(200, "text/plain", buf);
 	});

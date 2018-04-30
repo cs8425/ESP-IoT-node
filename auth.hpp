@@ -25,7 +25,7 @@ class String2: public String {
 };
 
 #define IV_SIZE 16
-#define KEY_SIZE 32
+#define KEY_SIZE AES_KEYLEN
 #define IV_TIMEOUT 10000
 class Auth {
 	public:

@@ -19,7 +19,7 @@
 #define DST_MN          0      // use 60mn for summer time in some countries
 
 
-#define AES_KEY         "0123456789abcdef" // hex, 32 byte
+#define AES_KEY         "0123456789abcdef0123456789abcdef" // bytes, 32 byte
 
 ////////////////////////////////////////////////////////
 
