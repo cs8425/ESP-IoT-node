@@ -13,6 +13,17 @@ extern void RNG(uint8_t *dest, unsigned size);
 //extern uint32_t millis(void);
 //extern unsigned long millis(void);
 
+class String2: public String {
+    public:
+	String str;
+
+	using String::String;
+
+	void SetLength(unsigned int _len) {
+		len = _len;
+	}
+};
+
 #define IV_SIZE 16
 #define KEY_SIZE 32
 #define IV_TIMEOUT 10000
@@ -70,22 +81,19 @@ class Auth {
 		}
 
 		String CodeHex2Byte(uint8_t* signHex, size_t lenHex) {
-			String sign = String();
+			String2 sign = String2();
 			if (lenHex & 0x01) return String(sign);
 			size_t len = lenHex / 2;
 			sign.reserve(len);
+			sign.SetLength(len);
 
 			unsigned i,j;
 			for (i=0, j=0; i<len; i++, j+=2) {
 				uint8_t c = hex2byte(signHex[j]) << 4;
-				//sign[i] = c | hex2byte(signHex[j + 1]);
-				//sign.setCharAt(i, c | hex2byte(signHex[j + 1]));
-				sign += (char) (c | hex2byte(signHex[j + 1]));
+				sign.setCharAt(i, c | hex2byte(signHex[j + 1]));
 			}
 
-			//Serial.printf("sign0(%d, %d) = %s\n", len, sign.length(), sign.c_str());
 			Sign((uint8_t*)sign.begin(), len);
-			//Serial.printf("sign1(%d) = %s\n", sign.length(), sign.c_str());
 			return String(sign);
 		}
 
