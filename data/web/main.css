@@ -177,7 +177,7 @@ div.smoothie-chart-tooltip {
 	margin-top: 20px;
 	font-family: consolas;
 	color: white;
-	font-size: 10px;
+	font-size: 1em;
 	pointer-events: none;
 }
 

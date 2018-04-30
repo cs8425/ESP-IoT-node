@@ -456,7 +456,7 @@ function init(){
 
 	// log
 	var genChart = function(id, series, style) {
-		var chart = new SmoothieChart({responsive:true,millisPerPixel:1000,grid:{millisPerLine:300000},interpolation:'linear',tooltip:true,timestampFormatter:SmoothieChart.timeFormatter});
+		var chart = new SmoothieChart({responsive:true,millisPerPixel:1000,grid:{millisPerLine:300000},interpolation:'linear',tooltip:true,labels:{fontSize:12},timestampFormatter:SmoothieChart.timeFormatter});
 		var canvas = document.getElementById(id);
 		chart.addTimeSeries(series, style);
 		chart.streamTo(canvas, 500);
@@ -488,7 +488,7 @@ function getLogs(cb) {
 			var hum = d[2] / 40.0
 			var press = (d[3] / 200.0) + 1013.0
 
-			var t = now - 60*1000*(i-1)
+			var t = now - 60*1000*(count - i)
 
 			logs.temp.append(t, temp)
 			logs.hum.append(t, hum)

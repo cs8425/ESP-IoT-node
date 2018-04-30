@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"path/filepath"
+	"mime"
 	"os"
 	"flag"
 	"log"
@@ -24,7 +25,9 @@ func trygz(next http.Handler) http.Handler {
 		gzpath := filepath.Join(*dir, r.URL.Path + ".gz")
 		_, err := os.Stat(gzpath)
 		if err == nil {
+			ctype := mime.TypeByExtension(filepath.Ext(r.URL.Path))
 			r.URL.Path += ".gz"
+			w.Header().Set("Content-Type", ctype)
 			w.Header().Set("Content-Encoding", "gzip")
 			Vln(3, "[gz]", r.Method, r.URL)
 		}
