@@ -7,6 +7,10 @@
 #define MAX_PARAM_LEN 256
 #define MAX_POST_LEN 512
 
+
+// TODO: dynamic Magic
+#define REQ_MAGIC "ESP23333"
+
 #define WERR(req) { \
 	(req)->send(500); \
 	return; \
@@ -15,6 +19,17 @@
 #define WERRC(req, c) { \
 	(req)->send((c)); \
 	return; \
+}
+
+const char auth_err[] PROGMEM = "auth error, not-authorized";
+const char param_err[] PROGMEM = "param error, missing or too long";
+
+#define WRET_PARAM_ERR(req) { \
+	(req)->send_P(400, "text/plain", param_err); \
+}
+
+#define WRET_AUTH_ERR(req) { \
+	(req)->send_P(403, "text/plain", auth_err); \
 }
 
 
@@ -40,17 +55,6 @@
 
 
 #define PARAM_GET_STR(x, def) ( (req->hasParam( (x) )) ? req->getParam( (x) )->value() : (def) )
-
-const char auth_err[] PROGMEM = "auth error, not-authorized";
-const char param_err[] PROGMEM = "param error, missing or too long";
-
-#define WRET_PARAM_ERR(req) { \
-	(req)->send_P(400, "text/plain", param_err); \
-}
-
-#define WRET_AUTH_ERR(req) { \
-	(req)->send_P(403, "text/plain", auth_err); \
-}
 
 bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 	if (!req->hasParam("k")) {

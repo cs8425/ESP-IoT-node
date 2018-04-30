@@ -44,10 +44,10 @@
 	<div class="block param" id="settings">
 		<div><div>Key:</div>&nbsp;<input type="password" id="key" /><div class="btn">Load from local</div><div class="btn">Save to local</div></div>
 		<div><div>New Key:</div>&nbsp;<input type="password" id="key2" /><div class="btn">generate new</div><div class="btn">Save to local</div></div>
-		<div><div>WiFi Mode:</div>&nbsp;<div><select><option value="AP_STA">AP+STA</option><option value="AP">AP</option><option value="STA">STA</option></select></div></div>
+		<div><div>WiFi Mode:</div>&nbsp;<div><select id="wifi-mode"><option value="3">AP+STA</option><option value="2">AP</option><option value="1">STA</option></select></div></div>
 		<div><div>WiFi AP SSID:</div>&nbsp;<input type="text" id="ap-ssid" placeholder="ESP..." /></div>
 		<div><div>WiFi AP Password:</div>&nbsp;<input type="password" id="ap-pwd" /></div>
-		<div><div>WiFi AP broadcast SSID:</div>&nbsp;<input type="checkbox" id="ap-broadcast" checked/></div>
+		<div><div>WiFi AP hide SSID:</div>&nbsp;<input type="checkbox" id="ap-hide" checked/></div>
 		<div><div>WiFi AP Channel:</div>&nbsp;<input type="text" id="ap-chan" placeholder="1~14" /></div>
 		<div><div>WiFi STA SSID:</div>&nbsp;<input type="text" id="sta-ssid" placeholder="hotspot" /></div>
 		<div><div>WiFi STA Password:</div>&nbsp;<input type="password" id="sta-pwd" /></div>

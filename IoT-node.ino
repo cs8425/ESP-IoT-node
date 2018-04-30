@@ -248,44 +248,24 @@ void loop() {
 	}
 }
 
-
-void scan() {
-	// WiFi.scanNetworks will return the number of networks found
-	int n = WiFi.scanNetworks();
-	Serial.println("scan done");
-	if (n == 0) {
-		Serial.println("no networks found...");
-	} else {
-		Serial.print(n);
-		Serial.println(" networks found");
-		for (int i = 0; i < n; ++i) {
-			// Print SSID and RSSI for each network found
-			Serial.print(i + 1);
-			Serial.print(": ");
-			Serial.print(WiFi.SSID(i));
-			Serial.print(" (");
-			Serial.print(WiFi.RSSI(i));
-			Serial.print(")");
-			Serial.println((WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*");
-		}
-	}
-	Serial.println("");
-}
-
 void setupServer(AsyncWebServer& server) {
 
 	// get & processing setting
 	server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *req){
-		PARAM_CHECK("as");
-		config.AP_ssid = req->getParam("as")->value().c_str();
 
 		Serial.printf("\n\nWiFi Mode = %d\n", config.WiFi_mode);
 		Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
 		Serial.printf("STA_SSID = %s, STA_PWD = %s\n\n\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
 
-		config.Save();
-		req->send(200, "text/plain", "ok");
-		//ESP.restart();
+		// TODO: encrypt before send
+		AsyncResponseStream *res = req->beginResponseStream("text/json");
+		res->printf("{\"mode\":%d,", config.WiFi_mode);
+		res->printf("\"ap\":\"%s\",", config.AP_ssid.c_str());
+		res->printf("\"ch\":%d,", config.AP_chan);
+		res->printf("\"hide\":%d,", config.AP_hidden);
+		res->printf("\"sta\":\"%s\"}", config.STA_ssid.c_str());
+
+		req->send(res);
 	});
 	server.on("/setting", HTTP_POST, [](AsyncWebServerRequest *req){
 		if(!req->hasParam("c", true)) {
@@ -303,6 +283,12 @@ void setupServer(AsyncWebServer& server) {
 		auth.SetGenerate(true);
 		Serial.printf("buf(%d) = %s\n", buf.length(), buf.c_str());
 
+		String magic = readStringUntil(buf, '\n');
+		if (!magic.equals(REQ_MAGIC)) {
+			WRET_AUTH_ERR(req);
+			return;
+		}
+
 		int mode = readStringUntil(buf, '\n').toInt();
 		String ap_ssid = readStringUntil(buf, '\n');
 		String ap_pwd = readStringUntil(buf, '\n');
@@ -311,17 +297,25 @@ void setupServer(AsyncWebServer& server) {
 		String sta_ssid = readStringUntil(buf, '\n');
 		String sta_pwd = readStringUntil(buf, '\n');
 
-		config.WiFi_mode = (WiFiMode_t) mode;
-		config.AP_ssid = ap_ssid;
-		config.AP_pwd = ap_pwd;
-		config.AP_chan = chan;
-		config.AP_hidden = hidden;
-		config.STA_ssid = sta_ssid;
-		config.STA_pwd = sta_pwd;
+
+		if (mode >= 1 && mode <= 3) config.WiFi_mode = (WiFiMode_t) mode;
+
+		if (ap_ssid.length() > 0 && ap_ssid.length() < 32) config.AP_ssid = ap_ssid;
+		if (ap_pwd.length() >= 8 && ap_pwd.length() < 64) config.AP_pwd = ap_pwd;
+
+		if (chan > 0 && chan <= 14) config.AP_chan = chan;
+
+		if (hidden >= 0 && hidden <= 1) config.AP_hidden = hidden;
+
+		if (sta_ssid.length() > 0 && sta_ssid.length() < 32) config.STA_ssid = sta_ssid;
+		if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) config.STA_pwd = sta_pwd;
+
 
 		Serial.printf("\n\nWiFi Mode = %d\n", config.WiFi_mode);
 		Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
 		Serial.printf("STA_SSID = %s, STA_PWD = %s\n\n\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
+
+		config.Save();
 
 		req->send(200, "text/plain", buf);
 	});

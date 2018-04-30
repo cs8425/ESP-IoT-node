@@ -30,5 +30,6 @@ All setting must be signed by key otherwise will be ignore (WIP, plan to use ECD
   - [ ] task
 - [ ] multi output pin with schedule
 - [ ] random number generator (entropy pool)
+- [ ] Wifi scan add join via Web UI
 
 

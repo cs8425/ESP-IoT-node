@@ -1,7 +1,7 @@
 'use strict';
 
 var url = 'http://192.168.1.116'
-var key = '0123456789abcdef'
+$('#key').val('0123456789abcdef')
 
 function pand2(i) {
 	var o = i
@@ -26,7 +26,6 @@ function msg(hdr, str) {
 
 
 var stEle = mkStatus()
-var st = null
 function mkStatus() {
 	var e = $('#status')
 	var out = {}
@@ -47,7 +46,6 @@ function getStatus(cb) {
 	crossDomain: true,
 	success: function(obj){
 		//console.log('/status', obj)
-		st = obj
 		updateStatusEle(stEle, obj)
 		if(cb) cb(obj)
 	}})
@@ -65,8 +63,58 @@ function updateStatusEle(e, o) {
 	}
 }
 
+function getSetting(cb) {
+	$.ajax({
+	url: url + '/setting',
+	type: 'GET',
+	crossDomain: true,
+	success: function(o){
+		console.log('/setting', o)
 
-var schedule = null
+		$('#wifi-mode').val(o.mode)
+		$('#ap-ssid').val(o.ap)
+		$('#ap-hide').prop('checked', o.hide)
+		$('#ap-chan').val(o.ch)
+		$('#sta-ssid').val(o.sta)
+
+		if(cb) cb(o)
+	}})
+}
+
+function setSetting(parms, cb) {
+	var key = $('#key').val()
+	$.ajax({
+	url: url + '/token',
+	type: 'GET',
+	crossDomain: true,
+	error: console.log,
+	success: function(hex){
+		console.log('/token', hex)
+		var iv = aesjs.utils.hex.toBytes(hex);
+		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
+		var keyBytes = aesjs.utils.utf8.toBytes(key);
+
+		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
+		var encryptedBytes = aesCtr.encrypt(parmsBytes);
+
+		parms = aesjs.utils.hex.fromBytes(encryptedBytes);
+
+		$.ajax({
+		url: url + '/setting',
+		data: 'c=' + parms,
+		type: 'POST',
+		crossDomain: true,
+		error: function(e){
+			console.log('send err', e)
+		},
+		success: function(obj){
+			console.log('send ret', obj)
+			if(cb) cb(obj)
+		}})
+	}})
+}
+
+
 function getSchedule(cb) {
 	$.ajax({
 	url: url + '/sch/ls',
@@ -75,7 +123,6 @@ function getSchedule(cb) {
 	error: console.log,
 	success: function(obj){
 		console.log('/sch/ls', obj)
-		schedule = obj
 		updateSchEle(obj)
 		if(cb) cb(obj)
 	}})
@@ -231,7 +278,7 @@ function setCus(cb) {
 	parm += '&on=' + (on+1)
 	parm += '&of=' + (of+1)
 
-	setdata(u, parm, key, function(obj){
+	setdata(u, parm, function(obj){
 		console.log(parm, obj)
 		getSchedule()
 		if(cb) cb(obj)
@@ -252,7 +299,7 @@ function delCus(cb) {
 		return
 	}
 	var parm = 'i=' + (parseInt(mid) + 1)
-	setdata('/sch/rm?', parm, key, function(obj){
+	setdata('/sch/rm?', parm, function(obj){
 		console.log(parm, obj)
 		getSchedule()
 		if(cb) cb(obj)
@@ -286,7 +333,7 @@ function setDef(cb) {
 	parm += '&on=' + (on+1)
 	parm += '&of=' + (of+1)
 
-	setdata('/sch/def?', parm, key, function(obj){
+	setdata('/sch/def?', parm, function(obj){
 		console.log('/sch/def', obj)
 		getSchedule()
 		if(cb) cb(obj)
@@ -313,6 +360,7 @@ function init(){
 		$('.tabs > div.block').css('display', 'none')
 		$('#' + id).css('display', 'block')
 		if(id == 'schedule') getSchedule()
+		if(id == 'settings') getSetting()
 	})
 
 	// bind default setting handler
@@ -343,6 +391,34 @@ function init(){
 		console.log(e, this)
 		delCus()
 	})
+
+	$('#settingBtn').on('click', function(e){
+		console.log(e, this)
+		var wm = parseInt($('#wifi-mode').val()) || 3
+		var ap_ssid = $('#ap-ssid').val()
+		var ap_pwd = $('#ap-pwd').val()
+		var hide = ($('#ap-hide').is(':checked')) ? 1 : 0
+		var chan = parseInt($('#ap-chan').val()) || 1
+		var sta_ssid = $('#sta-ssid').val()
+		var sta_pwd = $('#sta-pwd').val()
+
+		console.log('mode', wm)
+		console.log('AP', ap_ssid, ap_pwd, hide, chan)
+		console.log('STA', sta_ssid, sta_pwd)
+
+		// TODO: dynamic Magic
+		var param = 'ESP23333\n'
+		param += wm + '\n'
+		param += ap_ssid + '\n'
+		param += ap_pwd + '\n'
+		param += chan + '\n'
+		param += hide + '\n'
+		param += sta_ssid + '\n'
+		param += sta_pwd + '\n'
+
+		console.log('param', param)
+		setSetting(param)
+	})
 }
 
 
@@ -359,7 +435,8 @@ $(window).on('load', function(e) {
 
 
 
-function setdata(u, parms, key, cb, errcb) {
+function setdata(u, parms, cb, errcb) {
+	var key = $('#key').val()
 	// parms = 'a=123&i=0'...
 	// u = '/sch/def?'
 	$.ajax({
@@ -385,39 +462,6 @@ function setdata(u, parms, key, cb, errcb) {
 		error: function(e){
 			console.log('send err', e)
 			if(errcb) errcb(obj)
-		},
-		success: function(obj){
-			console.log('send ret', obj)
-			if(cb) cb(obj)
-		}})
-	}})
-}
-
-function settest(parms, key, cb) {
-	$.ajax({
-	url: url + '/token',
-	type: 'GET',
-	crossDomain: true,
-	error: console.log,
-	success: function(hex){
-		console.log('/token', hex)
-		var iv = aesjs.utils.hex.toBytes(hex);
-		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
-		var keyBytes = aesjs.utils.utf8.toBytes(key);
-
-		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
-		var encryptedBytes = aesCtr.encrypt(parmsBytes);
-
-		parms = aesjs.utils.hex.fromBytes(encryptedBytes);
-
-		$.ajax({
-//		url: url + '/setting?c=' + parms,
-		url: url + '/setting',
-		data: 'c=' + parms,
-		type: 'POST',
-		crossDomain: true,
-		error: function(e){
-			console.log('send err', e)
 		},
 		success: function(obj){
 			console.log('send ret', obj)
