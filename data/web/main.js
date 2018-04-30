@@ -1,7 +1,7 @@
 'use strict';
 
-var url = 'http://192.168.1.116'
-$('#key').val('0123456789abcdef' + '0123456789abcdef')
+var url = ''
+$('#key').val('123456')
 
 function pand2(i) {
 	var o = i
@@ -82,7 +82,7 @@ function getSetting(cb) {
 }
 
 function setSetting(parms, cb) {
-	var key = $('#key').val()
+	var key = sha256.hex($('#key').val())
 	$.ajax({
 	url: url + '/token',
 	type: 'GET',
@@ -92,7 +92,8 @@ function setSetting(parms, cb) {
 		console.log('/token', hex)
 		var iv = aesjs.utils.hex.toBytes(hex);
 		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
-		var keyBytes = aesjs.utils.utf8.toBytes(key);
+		//var keyBytes = aesjs.utils.utf8.toBytes(key);
+		var keyBytes = aesjs.utils.hex.toBytes(key);
 
 		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
 		var encryptedBytes = aesCtr.encrypt(parmsBytes);
@@ -403,6 +404,7 @@ function init(){
 		var sta_pwd = $('#sta-pwd').val()
 
 		var new_key = $('#key2').val()
+		if (new_key != '') new_key = sha256.hex(new_key);
 
 		console.log('mode', wm)
 		console.log('AP', ap_ssid, ap_pwd, hide, chan)
@@ -421,7 +423,12 @@ function init(){
 		param += new_key + '\n'
 
 		console.log('param', param)
-		setSetting(param)
+		setSetting(param, function(o){
+			// update old key
+			$('#key').val($('#key2').val())
+			$('#key2').val('')
+			getSetting()
+		})
 	})
 }
 
@@ -440,7 +447,7 @@ $(window).on('load', function(e) {
 
 
 function setdata(u, parms, cb, errcb) {
-	var key = $('#key').val()
+	var key = sha256.hex($('#key').val())
 	// parms = 'a=123&i=0'...
 	// u = '/sch/def?'
 	$.ajax({
@@ -452,7 +459,8 @@ function setdata(u, parms, cb, errcb) {
 		console.log('/token', hex)
 		var iv = aesjs.utils.hex.toBytes(hex);
 		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
-		var keyBytes = aesjs.utils.utf8.toBytes(key);
+		//var keyBytes = aesjs.utils.utf8.toBytes(key);
+		var keyBytes = aesjs.utils.hex.toBytes(key);
 
 		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
 		var encryptedBytes = aesCtr.encrypt(parmsBytes);
@@ -465,7 +473,7 @@ function setdata(u, parms, cb, errcb) {
 		crossDomain: true,
 		error: function(e){
 			console.log('send err', e)
-			if(errcb) errcb(obj)
+			if(errcb) errcb(e)
 		},
 		success: function(obj){
 			console.log('send ret', obj)

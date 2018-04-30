@@ -22,9 +22,6 @@
 #include "auth.hpp"
 #include "web.hpp"
 
-//#define OUT_PIN D4
-#define OUT_PIN LED_BUILTIN // GPIO 2
-
 #define TZ_MN           ((TZ)*60)
 #define TZ_SEC          ((TZ)*3600)
 #define DST_SEC         ((DST_MN)*60)
@@ -65,14 +62,12 @@ void setup() {
 	config.Load();
 
 	Serial.printf("WiFi Mode = %d\n", config.WiFi_mode);
-	Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
-	Serial.printf("STA_SSID = %s, STA_PWD = %s\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
-
-	Serial.printf("KEY = %s\n", config.KEY.c_str());
+	Serial.printf("AP_SSID = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_chan, config.AP_hidden);
+	Serial.printf("STA_SSID = %s\n", config.STA_ssid.c_str());
 
 	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
 
-	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
+	WiFi.persistent(false); // !!! less flash write for WiFi setting !!!
 	WiFi.mode(config.WiFi_mode);
 	switch (config.WiFi_mode) {
 		case WIFI_STA:
@@ -90,7 +85,7 @@ void setup() {
 	auth.setKey((uint8_t*)config.KEY.c_str());
 
 
-
+	// TODO: load from SPIFFS
 	for(uint8_t i=0; i<7; i++){
 		sch.SetDefaultMode(i, i, i+1);
 	}
@@ -160,18 +155,8 @@ void loop() {
 	now_ms = millis();
 	now_us = micros();
 
-/*	if(now_ms - last_ms > 10000){
-		scan();
-		Serial.print(WiFi.status());
-		Serial.println();
-		last_ms = now_ms;
-	}*/
-
 	if(now_ms - last_ms > 1000){
 		last_ms = now_ms;
-
-		//Serial.print("cbtime_set = ");
-		//Serial.println(cbtime_set);
 
 		Serial.print("now_ms = ");
 		Serial.println(now_ms);
@@ -192,7 +177,7 @@ void loop() {
 
 		int o = pin.Update();
 		if (o != -1) {
-			digitalWrite(OUT_PIN, o);
+			digitalWrite(OUT_PIN, OUT_LOW_ACTIVE - o);
 		}
 
 
@@ -213,8 +198,6 @@ void loop() {
 		Serial.println(ESP.getFreeHeap(), DEC);
 
 		printTm("localtime", localtime(&now));
-		Serial.println();
-		printTm("gmtime   ", gmtime(&now));
 		Serial.println("\n\n");
 
 
@@ -277,10 +260,8 @@ void setupServer(AsyncWebServer& server) {
 			return;
 		}
 
-		Serial.printf("config(%d) = %s\n", c.length(), c.c_str());
 		String buf = auth.CodeHex2Byte((uint8_t*)c.c_str(), c.length());
 		auth.SetGenerate(true);
-		Serial.printf("buf(%d) = %s\n", buf.length(), buf.c_str());
 
 		String magic = readStringUntil(buf, '\n');
 		if (!magic.equals(REQ_MAGIC)) {
@@ -311,33 +292,19 @@ void setupServer(AsyncWebServer& server) {
 		if (sta_ssid.length() > 0 && sta_ssid.length() < 32) config.STA_ssid = sta_ssid;
 		if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) config.STA_pwd = sta_pwd;
 
-
-		Serial.printf("\n\nWiFi Mode = %d\n", config.WiFi_mode);
-		Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
-		Serial.printf("STA_SSID = %s, STA_PWD = %s\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
-		Serial.printf("NEW_KEY(%d) = %s\n\n\n", new_key.length(), new_key.c_str());
-
 		config.Save();
 
-		if (new_key.length() == 32) {
-			config.KEY = new_key;
+		if (new_key.length() == 64) {
+			config.SetKeyHex(new_key);
 			config.SaveKey();
+			auth.setKey((uint8_t*)config.KEY.c_str());
 		}
 
-		req->send(200, "text/plain", buf);
+		req->send(200, "text/plain", "ok");
 	});
 
 	server.on("/token", HTTP_GET, [](AsyncWebServerRequest *req){
 		req->send(200, "text/plain", auth.GetIVHex());
-	});
-
-	server.on("/test", HTTP_GET, [](AsyncWebServerRequest *req){
-		bool ok = authCheck(req, auth);
-		if (ok) {
-			req->send(200, "text/plain", "check ok!");
-		} else {
-			req->send(200, "text/plain", "check failed!");
-		}
 	});
 
 	server.on("/status", HTTP_GET, [](AsyncWebServerRequest *req){

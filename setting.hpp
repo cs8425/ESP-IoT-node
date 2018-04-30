@@ -4,6 +4,7 @@
 #include <FS.h>
 
 #include "config.h"
+#include "util.hpp"
 
 class Settings {
 	public:
@@ -20,7 +21,25 @@ class Settings {
 		static String KEY;
 
 		Settings() {
+			SetKeyHex((uint8_t*)AES_KEY, sizeof(AES_KEY));
+		}
 
+		void SetKeyHex(String hex) {
+			SetKeyHex((uint8_t*)hex.c_str(), hex.length());
+		}
+		void SetKeyHex(uint8_t* keyHex, size_t lenHex) {
+			String2 key = String2();
+			size_t len = lenHex / 2;
+			key.reserve(len);
+			key.SetLength(len);
+
+			unsigned i,j;
+			for (i=0, j=0; i<len; i++, j+=2) {
+				uint8_t c = hex2byte(keyHex[j]) << 4;
+				key.setCharAt(i, c | hex2byte(keyHex[j + 1]));
+			}
+
+			KEY = key;
 		}
 
 		int Load() {
@@ -113,7 +132,9 @@ class Settings {
 			SPIFFS.remove(KEY_FILE);
 		}
 	private:
-
+		static uint8_t hex2byte(uint8_t c) {
+			return c - ( c <= '9' ? '0' : ('a'-10) );
+		}
 };
 
 String Settings::AP_ssid = AP_SSID;
@@ -126,7 +147,7 @@ String Settings::STA_pwd = STA_PWD;
 
 WiFiMode_t Settings::WiFi_mode = WIFI_MODE;
 
-String Settings::KEY = AES_KEY;
+String Settings::KEY = "";
 
 #endif //__SETTING_HPP_
 

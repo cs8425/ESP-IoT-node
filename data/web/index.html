@@ -2,7 +2,6 @@
 <head>
 	<meta charset="utf-8">
 	<title>esp8266 IoT node</title>
-	<script src="jquery.min.js"></script>
 	<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>-->
 	<link rel="stylesheet" href="main.css">
 </head>
@@ -52,7 +51,7 @@
 		<div><div>WiFi STA SSID:</div>&nbsp;<input type="text" id="sta-ssid" placeholder="hotspot" /></div>
 		<div><div>WiFi STA Password:</div>&nbsp;<input type="password" id="sta-pwd" /></div>
 
-		<div><div></div><span class="primary btn" id="settingBtn">Save</span></div>
+		<div><div></div><span class="primary btn" id="settingBtn">Save</span><span class="danger btn" id="rebootBtn">reboot</span></div>
 	</div>
 </div>
 
@@ -105,6 +104,8 @@
 
 </body>
 <script src="aes-js.js"></script>
+<script src="sha256.min.js"></script>
+<script src="jquery.min.js"></script>
 <script src="main.js"></script>
 </html>
 

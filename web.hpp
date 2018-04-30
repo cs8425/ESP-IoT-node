@@ -81,13 +81,8 @@ bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 		param += p->name() + "=" + p->value();
 		if (i != params-1) param += "&";
 	}
-	Serial.printf("param[%d]:%s\n", param.length(), param.c_str());
-	Serial.printf("sign0[%d]:%s\n", sign.length(), sign.c_str());
 
 	bool ok = auth.CheckKeyHex((uint8_t*)sign.c_str(), sign.length(), (uint8_t*)param.c_str());
-
-	Serial.printf("sign[%d]:%s\n", sign.length(), sign.c_str());
-
 	return ok;
 }
 

@@ -1,6 +1,16 @@
 #ifndef __UTIL_HPP_
 #define __UTIL_HPP_
 
+class String2: public String {
+    public:
+	String str;
+
+	using String::String;
+
+	void SetLength(unsigned int _len) {
+		len = _len;
+	}
+};
 
 String readStringUntil(String& str, char terminator) {
 	int index = str.indexOf(terminator);
@@ -11,7 +21,6 @@ String readStringUntil(String& str, char terminator) {
 	str = str.substring(index + 1);
 	return ret;
 }
-
 
 // SDK get time from boot up
 extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);

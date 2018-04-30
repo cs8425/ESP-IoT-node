@@ -8,21 +8,11 @@
 #define AES256 1
 
 #include "aes.hpp"
+#include "util.hpp"
 
 extern void RNG(uint8_t *dest, unsigned size);
 //extern uint32_t millis(void);
 //extern unsigned long millis(void);
-
-class String2: public String {
-    public:
-	String str;
-
-	using String::String;
-
-	void SetLength(unsigned int _len) {
-		len = _len;
-	}
-};
 
 #define IV_SIZE 16
 #define KEY_SIZE AES_KEYLEN
