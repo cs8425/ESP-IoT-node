@@ -3,7 +3,6 @@
 */
 
 #include <ESP8266WiFi.h>
-#include <EEPROM.h>
 #include <FS.h>
 
 #include <time.h>                       // time() ctime()
@@ -15,6 +14,7 @@
 #include "Adafruit_BME280.h"
 
 #include "config.h"
+#include "setting.hpp"
 #include "util.hpp"
 #include "schedule.hpp"
 #include "sensor_log.hpp"
@@ -47,6 +47,8 @@ Auth auth;
 
 AsyncWebServer server(80);
 
+Settings config;
+
 void setup() {
 	Serial.begin(115200);
 
@@ -55,92 +57,57 @@ void setup() {
 		Serial.println("Could not find a valid BME280 sensor, check wiring!");
 	}
 
-	SPIFFS.begin();
+	if (!SPIFFS.begin()) {
+		Serial.println("Could not mount SPIFFS!");
+	}
 
-	// TODO: load from SPIFFS
+	// load config
+	config.Load();
+
+	Serial.printf("WiFi Mode = %d\n", config.WiFi_mode);
+	Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
+	Serial.printf("STA_SSID = %s, STA_PWD = %s\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
+
+
+
 	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
+
+	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
+	WiFi.mode(config.WiFi_mode);
+	switch (config.WiFi_mode) {
+		case WIFI_STA:
+			WiFi.begin(config.STA_ssid.c_str(), config.STA_pwd.c_str());
+			break;
+		case WIFI_AP:
+			WiFi.softAP(config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
+			break;
+		default:
+		case WIFI_AP_STA:
+			WiFi.begin(config.STA_ssid.c_str(), config.STA_pwd.c_str());
+			WiFi.softAP(config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
+			break;
+	}
+
+
+	if (SPIFFS.exists(KEY_FILE)) {
+		// load key
+
+	}
+	auth.setKey((uint8_t*)AES_KEY);
+
+
 
 	for(uint8_t i=0; i<7; i++){
 		sch.SetDefaultMode(i, i, i+1);
 	}
-
 	pin.SetMode(15, 10, true);
-
 	pinMode(OUT_PIN, OUTPUT);
-
-	WiFi.persistent(false); // !!! less flash write for WiFiMulti !!!
-	WiFi.mode(WIFI_AP_STA);
-	WiFi.begin(STA_SSID, STA_PWD);
-	WiFi.softAP(AP_SSID, AP_PWD); // ssid, passphrase = NULL, channel = 1, ssid_hidden = 0
-
-	auth.setKey((uint8_t*)"0123456789abcdef");
 
 
 	// don't wait, observe time changing when ntp timestamp is received
 	settimeofday_cb(time_is_set);
 
 	setupServer(server);
-
-	server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *req){
-		req->send(200, "text/plain", String(ESP.getFreeHeap()));
-	});
-
-	server.on("/key", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
-		uint32_t dt = millis();
-		const char* hex = auth.GetIVHex();
-		dt = millis() - dt;
-		res->printf("hex:%s\n", hex);
-		res->printf("dt:%u\n", dt);
-
-		req->send(res);
-	});
-
-	server.on("/sign", HTTP_GET, [](AsyncWebServerRequest *req){
-		if (!req->hasParam("k")) {
-			req->send(400, "text/plain", "need param");
-			return;
-		}
-		String key = req->getParam("k")->value();
-
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
-		uint32_t dt = millis();
-		auth.Sign((uint8_t*)key.c_str(), key.length());
-		dt = millis() - dt;
-
-		auth.Reset(); //reset counter
-
-		res->printf("hex:");
-		for (unsigned i = 0; i < key.length(); i++)	{
-			res->printf("%02x", key.charAt(i));
-		}
-		res->printf("\ndt:%u\n", dt);
-
-		req->send(res);
-	});
-
-	server.on("/check", HTTP_GET, [](AsyncWebServerRequest *req){
-		if (!req->hasParam("s") || !req->hasParam("d")) {
-			req->send(400, "text/plain", "need param");
-			return;
-		}
-		String sign = req->getParam("s")->value();
-		String data = req->getParam("d")->value();
-
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
-		uint32_t dt = millis();
-		bool ok = auth.CheckKeyHex((uint8_t*)sign.c_str(), sign.length(), (uint8_t*)data.c_str());
-		dt = millis() - dt;
-
-		res->printf("sign0:");
-		for (unsigned i = 0; i < sign.length(); i++)	{
-			res->printf("%02x", sign.charAt(i));
-		}
-		res->printf("\ndt:%u\n", dt);
-		res->printf("check:%u\n", ok);
-
-		req->send(res);
-	});
 
 	// for debug
 	server.on("/dump", HTTP_GET, [](AsyncWebServerRequest *req){
@@ -267,8 +234,18 @@ void loop() {
 		//logs.Add(ESP.getFreeHeap() / 10, pin.GetOutput());
 		//logs.Add(ESP.getFreeHeap() / 10, now_ms / 1000);
 		logs.Add(temp * 100.0f, hum * 4.0f);
+
+		Serial.println("\n\n");
 	}
 
+	if (Serial.available() > 0) {
+		int inByte = Serial.read();
+		if (inByte == 'R') {
+			Serial.println("reset config...");
+			config.Reset();
+			//ESP.restart();
+		}
+	}
 }
 
 
@@ -297,14 +274,31 @@ void scan() {
 
 void setupServer(AsyncWebServer& server) {
 
-/*
 	// get & processing setting
 	server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("as");
+		config.AP_ssid = req->getParam("as")->value().c_str();
 
+		Serial.printf("\n\nWiFi Mode = %d\n", config.WiFi_mode);
+		Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
+		Serial.printf("STA_SSID = %s, STA_PWD = %s\n\n\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
+
+		config.Save();
+		req->send(200, "text/plain", "ok");
+		//ESP.restart();
 	});
 	server.on("/setting", HTTP_POST, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("c");
+		String c = req->getParam("c")->value().c_str();
 
-	});*/
+		Serial.printf("config(%d) = %s\n", c.length(), c.c_str());
+		String buf = auth.CodeHex2Byte((uint8_t*)c.c_str(), c.length());
+		auth.SetGenerate(true);
+
+		Serial.printf("buf(%d) = %s\n", buf.length(), buf.c_str());
+
+		req->send(200, "text/plain", c);
+	});
 
 	server.on("/token", HTTP_GET, [](AsyncWebServerRequest *req){
 		req->send(200, "text/plain", auth.GetIVHex());

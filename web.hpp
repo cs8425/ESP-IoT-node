@@ -72,31 +72,5 @@ bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 	return ok;
 }
 
-#define MAX_RNG_TRY 8
-void RNG(uint8_t *dest, unsigned size) {
-	// Use the least-significant bits from the ADC for an unconnected pin (or connected to a source of 
-	// random noise). This can take a long time to generate random data if the result of analogRead(0) 
-	// doesn't change very frequently.
-	while (size) {
-		uint8_t val = 0;
-		for (unsigned i = 0; i < 8; ++i) {
-			int init = analogRead(A0);
-			int count = 0;
-			while ((analogRead(A0) == init) && (count < MAX_RNG_TRY)) {
-				++count;
-			}
-
-			if ((count == 0) || (count == MAX_RNG_TRY)){
-				val = (val << 1) | (init & 0x01);
-			} else {
-				val = (val << 1) | (count & 0x01);
-			}
-		}
-		*dest = val;
-		++dest;
-		--size;
-	}
-}
-
 #endif //__WEB_HPP_
 

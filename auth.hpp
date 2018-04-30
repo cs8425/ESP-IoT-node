@@ -65,13 +65,37 @@ class Auth {
 			return ok;
 		}
 
-		void Sign(uint8_t* sign, size_t len) {
+		void Sign(uint8_t* sign, size_t len) { // encode / decode
 			AES_CTR_xcrypt_buffer(&_ctx, sign, len);
+		}
+
+		String CodeHex2Byte(uint8_t* signHex, size_t lenHex) {
+			String sign = String();
+			if (lenHex & 0x01) return String(sign);
+			size_t len = lenHex / 2;
+			sign.reserve(len);
+
+			unsigned i,j;
+			for (i=0, j=0; i<len; i++, j+=2) {
+				uint8_t c = hex2byte(signHex[j]) << 4;
+				//sign[i] = c | hex2byte(signHex[j + 1]);
+				//sign.setCharAt(i, c | hex2byte(signHex[j + 1]));
+				sign += (char) (c | hex2byte(signHex[j + 1]));
+			}
+
+			//Serial.printf("sign0(%d, %d) = %s\n", len, sign.length(), sign.c_str());
+			Sign((uint8_t*)sign.begin(), len);
+			//Serial.printf("sign1(%d) = %s\n", sign.length(), sign.c_str());
+			return String(sign);
 		}
 
 		void Reset() {
 			_needgen = false;
 			AES_init_ctx_iv(&_ctx, _key, _iv);
+		}
+
+		void SetGenerate(bool need) {
+			_needgen = need;
 		}
 
 		bool needGenerate(uint32_t now) {

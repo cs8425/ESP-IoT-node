@@ -5,11 +5,12 @@
 
 ////////////////////////////////////////////////////////
 
-#define ENABLE_AP       1       // 0: not start AP  1: start AP
-#define ENABLE_STA      1       // 0: not start STA  1: start STA
+#define WIFI_MODE       WIFI_AP_STA // WIFI_AP, WIFI_STA, WIFI_AP_STA
 
 #define AP_SSID         "esp"
 #define AP_PWD          "Aa123454321aA"
+#define AP_CHANNEL      1 // 0~14
+#define AP_HIDDEN       0
 
 #define STA_SSID        "your_wifi_SSID"
 #define STA_PWD         "password_for_your_wifi"
@@ -18,15 +19,12 @@
 #define DST_MN          0      // use 60mn for summer time in some countries
 
 
-#define RTC_TEST     1510592825 // 1510592825 = Monday 13 November 2017 17:07:05 UTC
+#define AES_KEY         "0123456789abcdef" // hex, 32 byte
 
 ////////////////////////////////////////////////////////
 
-/*
-#if ENABLE_AP && ENABLE_STA
-	#define WIFI_MODE WIFI_AP_STA
-#endif
-*/
+#define CONFIG_FILE     "/config"
+#define KEY_FILE        "/key"
 
 #endif
 

@@ -408,11 +408,11 @@ function settest(parms, key, cb) {
 		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
 		var encryptedBytes = aesCtr.encrypt(parmsBytes);
 
-		parms += '&s=' + aesjs.utils.hex.fromBytes(encryptedBytes);
+		parms = aesjs.utils.hex.fromBytes(encryptedBytes);
 
 		$.ajax({
-		url: url + '/check?d=' + parms,
-		type: 'GET',
+		url: url + '/setting?c=' + parms,
+		type: 'POST',
 		crossDomain: true,
 		error: function(e){
 			console.log('send err', e)
