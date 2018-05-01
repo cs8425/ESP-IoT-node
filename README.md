@@ -1,11 +1,42 @@
-# [WIP] ESP-Security-IOnode
-Using ESP8266 to log and control switch output.
-With scheduled output and settable schedule via Web UI.
-All setting must be signed by key otherwise will be ignore (WIP, plan to use ECDSA P256 / AES-256 / ChaCha20).
+# ESP-Security-IoT-node
+Using ESP8266 to control switch output which scheduled and settable via Web UI, and log sensor data in the meantime.
+All setting must be signed/encrypt by key, otherwise will be ignore (using AES-256).
+Try to maximum security without TLS.
 
-* preallocated:
+* preallocated RAM:
 	* sersor logs
 	* schedules
+	* [WIP] task
+* output:
+	* single pin
+		* total 7*24 rules
+		* cycle weekly
+		* PWM output, period up to 8192 seconds, minimum interval 1 seconds, just setting ON and OFF seconds.
+	* [WIP] multi pin
+* sensors:
+	* BMP280
+		* Temperature
+		* Humidity
+		* Pressure
+
+
+
+### Build
+
+1. install library which I had modified: [ESPAsyncWebServer](https://github.com/cs8425/ESPAsyncWebServer.git)
+2. install library [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP.git) (skip if already installed)
+3. copy `config.example.h` to `config.h`, and edit the value you want to change(eg: wifi config, encrypt key).
+4. (optional) edit preallocated size: `MAX_LOG_COUNT`@`sensor_log.hpp`, `MAX_SCHEDLE_COUNT`@`schedule.hpp`
+5. (optional) add/remove sensor in `IoT-node.ino`
+6. compile & upload code
+7. upload web UI data via [arduino-esp8266fs-plugin](https://github.com/esp8266/arduino-esp8266fs-plugin)
+
+
+### reset config
+
+1. attach UART(Serial), baud 115200 8-N-1
+2. send `RRRRR`, character `R` more than 5 times, you will see `reset all config...`
+3. press reset button or power cycled ESP
 
 
 ### TODO
@@ -17,7 +48,7 @@ All setting must be signed by key otherwise will be ignore (WIP, plan to use ECD
   - [x] wifi/esp setting
 - [ ] Web UI
   - [x] schedule output setting
-  - [ ] log viewer
+  - [x] log viewer
   - [ ] task setting
   - [x] wifi/esp setting
 - [ ] signature for any setting
@@ -32,5 +63,6 @@ All setting must be signed by key otherwise will be ignore (WIP, plan to use ECD
 - [ ] multi output pin with schedule
 - [x] ~~random number generator (entropy pool)~~ use `os_get_random()` from SDK
 - [ ] Wifi scan add join via Web UI
+- [ ] PID control output with sensor feedback
 
 
