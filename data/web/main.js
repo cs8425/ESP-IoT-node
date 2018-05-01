@@ -1,6 +1,7 @@
 'use strict';
 
-var url = 'http://192.168.1.116'
+//var url = 'http://192.168.1.116'
+var url = ''
 
 function pand2(i) {
 	var o = i

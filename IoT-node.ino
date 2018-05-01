@@ -210,7 +210,7 @@ void loop() {
 		Serial.printf("Pressure = %f hPa\n\n\n", press / 25600.0f);
 
 		newest_log.temp = (temp << 5) / 100;
-		newest_log.hum = (hum >> 8) * 10;
+		newest_log.hum = (hum * 5) >> 7;
 		newest_log.press = (press >> 7) - 101300*2;
 
 		static unsigned log_denom = 0;
