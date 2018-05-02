@@ -1,7 +1,7 @@
 /*
 ESP-Security-IoT-node
 
-scheduled and settable switch output controller via Web UI, try to maximum security without TLS.
+scheduled and settable relay output controller via Web UI, try to maximum security without TLS.
 
 */
 

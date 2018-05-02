@@ -1,5 +1,5 @@
 # ESP-Security-IoT-node
-Using ESP8266 to control switch output which scheduled and settable via Web UI, and log sensor data in the meantime.
+Using ESP8266 to control relay output which scheduled and settable via Web UI, and log sensor data in the meantime.
 All setting must be signed/encrypt by key, otherwise will be ignore (using AES-256).
 Try to maximum security without TLS.
 
@@ -14,7 +14,7 @@ Try to maximum security without TLS.
 		* PWM output, period up to 8192 seconds, minimum interval 1 seconds, just setting ON and OFF seconds.
 	* [WIP] multi pin
 * sensors:
-	* BMP280
+	* BME280
 		* Temperature
 		* Humidity
 		* Pressure
@@ -22,17 +22,17 @@ Try to maximum security without TLS.
 ### Web UI Screenshots
 
 ![startup page](https://raw.githubusercontent.com/cs8425/ESP-IoT-node/master/docs/001.png)
-
+----
 ![setting page](https://raw.githubusercontent.com/cs8425/ESP-IoT-node/master/docs/010.png)
-
+----
 ![schedule page 1](https://raw.githubusercontent.com/cs8425/ESP-IoT-node/master/docs/022.png)
-
+----
 ![schedule page 2](https://raw.githubusercontent.com/cs8425/ESP-IoT-node/master/docs/025.png)
-
+----
 ![set rule](https://raw.githubusercontent.com/cs8425/ESP-IoT-node/master/docs/023.png)
-
+----
 ![set default rule](https://raw.githubusercontent.com/cs8425/ESP-IoT-node/master/docs/024.png)
-
+----
 ![log page](https://raw.githubusercontent.com/cs8425/ESP-IoT-node/master/docs/031.png)
 
 
