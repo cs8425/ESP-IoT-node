@@ -43,11 +43,11 @@ function setdata(u, parms, cb, errcb) {
 	success: function(hex){
 		console.log('/token', hex)
 		var iv = aesjs.utils.hex.toBytes(hex);
-		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
+		var parmsBytes = sha256.array(parms);
 		var keyBytes = aesjs.utils.hex.toBytes(key);
 
-		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
-		var encryptedBytes = aesCtr.encrypt(parmsBytes);
+		var aesCbc = new aesjs.ModeOfOperation.cbc(keyBytes, iv);
+		var encryptedBytes = aesCbc.encrypt(parmsBytes);
 
 		parms += '&k=' + aesjs.utils.hex.fromBytes(encryptedBytes);
 

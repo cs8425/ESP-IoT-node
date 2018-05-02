@@ -1,7 +1,7 @@
 #ifndef __AUTH_HPP_
 #define __AUTH_HPP_
 
-#define CBC 0
+#define CBC 1
 #define CTR 1
 #define ECB 0
 
@@ -42,7 +42,7 @@ class Auth {
 			if (_needgen) return false;
 			_needgen = true;
 
-			AES_CTR_xcrypt_buffer(&_ctx, sign, len);
+			AES_CBC_decrypt_buffer(&_ctx, sign, len);
 
 			if (0 == memcmp((char *) sign, (char *) input, len)) {
 				return true;
@@ -66,7 +66,7 @@ class Auth {
 			return ok;
 		}
 
-		void Sign(uint8_t* sign, size_t len) { // encode / decode
+		void Code(uint8_t* sign, size_t len) { // encode / decode
 			AES_CTR_xcrypt_buffer(&_ctx, sign, len);
 		}
 
@@ -83,7 +83,7 @@ class Auth {
 				sign.setCharAt(i, c | hex2byte(signHex[j + 1]));
 			}
 
-			Sign((uint8_t*)sign.begin(), len);
+			Code((uint8_t*)sign.begin(), len);
 			return String(sign);
 		}
 

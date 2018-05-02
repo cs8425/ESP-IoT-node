@@ -2,6 +2,7 @@
 #define __WEB_HPP_
 
 #include "auth.hpp"
+#include "lonesha256.h"
 
 // we won't have too long data to check
 #define MAX_PARAM_LEN 256
@@ -62,7 +63,7 @@ bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 	}
 	String sign = req->getParam("k")->value();
 
-	if (sign.length() > MAX_PARAM_LEN) {
+	if (sign.length() != SHA256SUM_LEN*2) { // length of sha256 hex
 		return false;
 	}
 
@@ -82,7 +83,10 @@ bool authCheck(AsyncWebServerRequest *req, Auth auth) {
 		if (i != params-1) param += "&";
 	}
 
-	bool ok = auth.CheckKeyHex((uint8_t*)sign.c_str(), sign.length(), (uint8_t*)param.c_str());
+	uint8_t out[SHA256SUM_LEN];
+	lonesha256(out, (uint8_t*)param.c_str(), param.length());
+
+	bool ok = auth.CheckKeyHex((uint8_t*)sign.c_str(), sign.length(), out);
 	return ok;
 }
 
