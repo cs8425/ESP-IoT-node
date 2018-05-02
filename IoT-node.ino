@@ -1,4 +1,7 @@
 /*
+ESP-Security-IoT-node
+
+scheduled and settable switch output controller via Web UI, try to maximum security without TLS.
 
 */
 
@@ -6,7 +9,6 @@
 #include <FS.h>
 
 #include <time.h>                       // time() ctime()
-#include <coredecls.h>                  // settimeofday_cb()
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -25,13 +27,6 @@
 #define TZ_MN           ((TZ)*60)
 #define TZ_SEC          ((TZ)*3600)
 #define DST_SEC         ((DST_MN)*60)
-
-bool cbtime_set = false;
-
-void time_is_set (void) {
-	cbtime_set = true;
-	Serial.println("\n------------------ settimeofday() was called ------------------");
-}
 
 Adafruit_BME280 bme;
 
@@ -94,10 +89,6 @@ void setup() {
 	// load from SPIFFS
 	LoadSchedule(sch);
 
-
-	// don't wait, observe time changing when ntp timestamp is received
-	settimeofday_cb(time_is_set);
-
 	setupServer(server);
 
 	// for debug
@@ -147,34 +138,22 @@ void printTm (const char* what, const tm* tm) {
 }
 
 time_t now;
-uint32_t now_ms, now_us;
+uint32_t now_ms;
 uint32_t last_ms;
-
 uint32_t ext_cmd = 0;
 
 void loop() {
 
 	now = time(nullptr);
 	now_ms = millis();
-	now_us = micros();
 
 	if(now_ms - last_ms > 1000){
 		last_ms = now_ms;
 
-		Serial.print("now_ms = ");
-		Serial.println(now_ms);
 
 		int sid = sch.Update(now);
 		const mode* m = sch.GetOutput();
-		Serial.print("output update = ");
-		Serial.print(sid);
-		Serial.print(", mode.on = ");
-		Serial.print(m->on);
-		Serial.print(", mode.off = ");
-		Serial.println(m->off);
-
 		if (sid) {
-			Serial.println("force set output mode !");
 			pin.SetMode(m);
 		}
 
@@ -183,12 +162,15 @@ void loop() {
 			digitalWrite(OUT_PIN, OUT_LOW_ACTIVE - o);
 		}
 
-
-		Serial.print("log count = ");
-		Serial.println(logs.Count());
+		Serial.print("mode.on = ");
+		Serial.print(m->on);
+		Serial.print(", mode.off = ");
+		Serial.println(m->off);
 		Serial.print("mode output = ");
 		Serial.println(pin.GetOutput());
 
+		Serial.print("log count = ");
+		Serial.println(logs.Count());
 
 		Serial.print("wifi status: ");
 		Serial.print(WiFi.status());
@@ -197,20 +179,19 @@ void loop() {
 		Serial.print(", IP Address: ");
 		Serial.println(WiFi.localIP());
 
-		Serial.print("Free heap:");
+		Serial.print("Free heap: ");
 		Serial.println(ESP.getFreeHeap(), DEC);
 
 		printTm("localtime", localtime(&now));
-		Serial.println("\n\n");
+		Serial.print("\n\n\n");
 
 
 		int32_t temp = bme.readTemperatureInt();
 		int32_t hum = bme.readHumidityInt();
 		int32_t press = bme.readPressureInt();
-		Serial.printf("Temperature = %f C\n", temp / 100.0f);
-		Serial.printf("Humidity = %f %%\n", hum / 1024.0f);
-
-		Serial.printf("Pressure = %f hPa\n\n\n", press / 25600.0f);
+		Serial.printf("Temperature: %f C\n", temp / 100.0f);
+		Serial.printf("Humidity: %f %%\n", hum / 1024.0f);
+		Serial.printf("Pressure: %f hPa\n\n\n", press / 25600.0f);
 
 		newest_log.temp = (temp << 5) / 100;
 		newest_log.hum = (hum * 5) >> 7;
@@ -265,10 +246,6 @@ void setupServer(AsyncWebServer& server) {
 
 	// get & processing setting
 	server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *req){
-
-		Serial.printf("\n\nWiFi Mode = %d\n", config.WiFi_mode);
-		Serial.printf("AP_SSID = %s, AP_PWD = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
-		Serial.printf("STA_SSID = %s, STA_PWD = %s\n\n\n", config.STA_ssid.c_str(), config.STA_pwd.c_str());
 
 		// TODO: encrypt before send
 		AsyncResponseStream *res = req->beginResponseStream("text/json");

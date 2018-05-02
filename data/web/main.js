@@ -1,6 +1,5 @@
 'use strict';
 
-//var url = 'http://192.168.1.116'
 var url = ''
 
 function pand2(i) {
@@ -92,7 +91,6 @@ function mkStatus() {
 
 	var p = ["temp", "hum", "press", "pin", "on", "off", "heap"]
 	p.forEach(function(v,k){
-		//console.log(k,v)
 		out[v] = e.find('div:nth-child(' + (k+1)+ ') > div:nth-child(2)')
 	})
 
@@ -424,7 +422,6 @@ function init(){
 	// navbar
 	$('.nav > div.btn').on('click', function(e){
 		var id = $(this).text().toLowerCase()
-		//console.log(e, this, id)
 		$('.tabs > div.block').css('display', 'none')
 		$('#' + id).css('display', 'block')
 		if(id == 'schedule') getSchedule()
@@ -434,7 +431,6 @@ function init(){
 
 	// bind default setting handler
 	$('#sch-def > div:nth-child(1) > div').on('click', function(e){
-		//console.log(e, this)
 		e = $(this)
 		var popup = $('#def-rule')
 
@@ -584,11 +580,9 @@ function poll() {
 	var t = setTimeout(poll, 1000)
 }
 
-
 $(window).on('load', function(e) {
 	init()
 	poll()
 	getSchedule()
 })
-
 
