@@ -58,7 +58,7 @@ Try to maximum security without TLS.
   - [ ] task
 - [ ] save/load to SPIFFS
   - [x] settings
-  - [ ] schedule
+  - [x] schedule
   - [ ] task
 - [ ] multi output pin with schedule
 - [x] ~~random number generator (entropy pool)~~ use `os_get_random()` from SDK

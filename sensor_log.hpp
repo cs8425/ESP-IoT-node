@@ -11,7 +11,7 @@
 
 struct log_t {
 	// temperature
-	unsigned int temp : 12;
+	signed int temp : 12;
 
 	// humidity
 	unsigned int hum : 12;

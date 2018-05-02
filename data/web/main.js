@@ -32,6 +32,52 @@ function msg(hdr, str) {
 	e.css('display', 'block')
 }
 
+function setdata(u, parms, cb, errcb) {
+	var key = sha256.hex($('#key').val())
+	// parms = 'a=123&i=0'...
+	// u = '/sch/def?'
+	$.ajax({
+	url: url + '/token',
+	type: 'GET',
+	crossDomain: true,
+	error: console.log,
+	success: function(hex){
+		console.log('/token', hex)
+		var iv = aesjs.utils.hex.toBytes(hex);
+		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
+		var keyBytes = aesjs.utils.hex.toBytes(key);
+
+		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
+		var encryptedBytes = aesCtr.encrypt(parmsBytes);
+
+		parms += '&k=' + aesjs.utils.hex.fromBytes(encryptedBytes);
+
+		$.ajax({
+		url: url + u + parms,
+		type: 'GET',
+		crossDomain: true,
+		error: function(e){
+			console.log('send err', e)
+			if(errcb) errcb(e)
+		},
+		success: function(obj){
+			console.log('send ret', obj)
+			if(typeof cb === "function") cb(obj)
+		}})
+	}})
+}
+
+function syscall(code, cb) {
+	var parm = 'c=' + code
+	setdata('/sys?', parm, function(obj){
+		console.log('/sys', obj)
+		if(typeof cb === "function") cb(obj)
+	}, function(e){
+		console.log('/sys err', e)
+		msg('System Error', e.status + ' - ' + e.statusText)
+	});
+}
+
 var logs = {
 	temp: new TimeSeries(),
 	hum: new TimeSeries(),
@@ -60,7 +106,7 @@ function getStatus(cb) {
 	success: function(obj){
 		//console.log('/status', obj)
 		updateStatusEle(stEle, obj)
-		if(cb) cb(obj)
+		if(typeof cb === "function") cb(obj)
 	}})
 }
 function updateStatusEle(e, o) {
@@ -99,7 +145,7 @@ function getSetting(cb) {
 		$('#ap-chan').val(o.ch)
 		$('#sta-ssid').val(o.sta)
 
-		if(cb) cb(o)
+		if(typeof cb === "function") cb(o)
 	}})
 }
 
@@ -131,7 +177,7 @@ function setSetting(parms, cb) {
 		},
 		success: function(obj){
 			console.log('send ret', obj)
-			if(cb) cb(obj)
+			if(typeof cb === "function") cb(obj)
 		}})
 	}})
 }
@@ -146,7 +192,7 @@ function getSchedule(cb) {
 	success: function(obj){
 		console.log('/sch/ls', obj)
 		updateSchEle(obj)
-		if(cb) cb(obj)
+		if(typeof cb === "function") cb(obj)
 	}})
 }
 function updateSchEle(o) {
@@ -303,7 +349,7 @@ function setCus(cb) {
 	setdata(u, parm, function(obj){
 		console.log(parm, obj)
 		getSchedule()
-		if(cb) cb(obj)
+		if(typeof cb === "function") cb(obj)
 	}, function(e){
 		console.log('err', parm, e)
 		msg('Set Output Rule Error', e.status + ' - ' + e.statusText)
@@ -324,7 +370,7 @@ function delCus(cb) {
 	setdata('/sch/rm?', parm, function(obj){
 		console.log(parm, obj)
 		getSchedule()
-		if(cb) cb(obj)
+		if(typeof cb === "function") cb(obj)
 	}, function(e){
 		console.log('err', parm, e)
 		msg('Reome Output Rule Error', e.status + ' - ' + e.statusText)
@@ -358,7 +404,7 @@ function setDef(cb) {
 	setdata('/sch/def?', parm, function(obj){
 		console.log('/sch/def', obj)
 		getSchedule()
-		if(cb) cb(obj)
+		if(typeof cb === "function") cb(obj)
 	}, function(e){
 		console.log('/sch/def err', e)
 		msg('Set Default Output Error', e.status + ' - ' + e.statusText)
@@ -401,22 +447,24 @@ function init(){
 		popup.find('input[n=on]').val(e.attr('on'))
 		popup.find('input[n=of]').val(e.attr('of'))
 	})
-	$('#def-rule .param .primary.btn').on('click', function(e){
-		//console.log(e, this)
-		setDef()
-	})
+	$('#def-rule .param .primary.btn').on('click', setDef)
+	$('#cus-rule .param .primary.btn').on('click', setCus)
+	$('#cus-rule .param .danger.btn').on('click', delCus)
 
-	$('#cus-rule .param .primary.btn').on('click', function(e){
-		//console.log(e, this)
-		setCus()
-	})
-	$('#cus-rule .param .danger.btn').on('click', function(e){
-		console.log(e, this)
-		delCus()
+	$('#schedule > div > div.btn').on('click', function(e){
+		console.log('schedule btn', $(this).attr('do'))
+		var act = $(this).attr('do')
+		switch (act) {
+		case 'load':
+			syscall(3, getSchedule)
+			break
+		case 'save':
+			syscall(2)
+			break
+		}
 	})
 
 	$('#settingBtn').on('click', function(e){
-		console.log(e, this)
 		var wm = parseInt($('#wifi-mode').val()) || 3
 		var ap_ssid = $('#ap-ssid').val()
 		var ap_pwd = $('#ap-pwd').val()
@@ -448,11 +496,41 @@ function init(){
 		setSetting(param, function(o){
 			// update old key
 			$('#key').val($('#key2').val())
-			$('#key2').val('')
+			$('#key2').val('').attr('type','password')
 			getSetting()
 		})
 	})
+	$('#rebootBtn').on('click', function(e){
+		syscall(1)
+	})
 
+	var rndStr = function (len) {
+		var str = ''
+		var char = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+		var charlen = char.length
+
+		for (var i=0; i<len; i++) {
+			str += char.charAt(Math.floor(Math.random() * charlen))
+		}
+
+		return str
+	}
+	$('#settings > div > div.btn').on('click', function(e){
+		//console.log('settings btn', $(this).attr('do'))
+		var kele = $('#key')
+		var act = $(this).attr('do')
+		switch (act) {
+		case 'load':
+			kele.val(localStorage.getItem('key'))
+			break
+		case 'save':
+			localStorage.setItem('key', kele.val())
+			break
+		case 'new':
+			$('#key2').attr('type','text').val(rndStr(12))
+			break
+		}
+	})
 	$('#key').val(localStorage.getItem('key'))
 
 	// log
@@ -479,7 +557,6 @@ function getLogs(cb) {
 
 		var lines = obj.split('\n')
 		var count = parseInt(lines[0])
-		//lines.shift()
 		var now = new Date().getTime()
 		var l = []
 		for(var i=1; i<=count; i++) {
@@ -496,9 +573,9 @@ function getLogs(cb) {
 			logs.press.append(t, press)
 			l.push([t, temp, hum, press])
 		}
-		console.log('/log/all', l)
+		//console.log('/log/all', l)
 
-		if(cb) cb(obj)
+		if(typeof cb === "function") cb(l)
 	}})
 }
 
@@ -514,40 +591,4 @@ $(window).on('load', function(e) {
 	getSchedule()
 })
 
-
-
-function setdata(u, parms, cb, errcb) {
-	var key = sha256.hex($('#key').val())
-	// parms = 'a=123&i=0'...
-	// u = '/sch/def?'
-	$.ajax({
-	url: url + '/token',
-	type: 'GET',
-	crossDomain: true,
-	error: console.log,
-	success: function(hex){
-		console.log('/token', hex)
-		var iv = aesjs.utils.hex.toBytes(hex);
-		var parmsBytes = aesjs.utils.utf8.toBytes(parms);
-		var keyBytes = aesjs.utils.hex.toBytes(key);
-
-		var aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes, new aesjs.Counter(iv));
-		var encryptedBytes = aesCtr.encrypt(parmsBytes);
-
-		parms += '&k=' + aesjs.utils.hex.fromBytes(encryptedBytes);
-
-		$.ajax({
-		url: url + u + parms,
-		type: 'GET',
-		crossDomain: true,
-		error: function(e){
-			console.log('send err', e)
-			if(errcb) errcb(e)
-		},
-		success: function(obj){
-			console.log('send ret', obj)
-			if(cb) cb(obj)
-		}})
-	}})
-}
 

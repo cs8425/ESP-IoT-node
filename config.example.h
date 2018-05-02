@@ -8,7 +8,10 @@
 //#define OUT_PIN D4
 #define OUT_PIN LED_BUILTIN // GPIO 2
 
-#define OUT_LOW_ACTIVE 1 // 1 >> low active
+#define OUT_LOW_ACTIVE  1 // 1 >> low active
+
+#define DEF_ON_TIME     300 // default ON time
+#define DEF_OFF_TIME    1500 // default OFF time
 
 #define WIFI_MODE       WIFI_AP_STA // WIFI_AP, WIFI_STA, WIFI_AP_STA
 
@@ -30,6 +33,7 @@
 
 #define CONFIG_FILE     "/config"
 #define KEY_FILE        "/key" // raw bytes
+#define SCHEDLE_FILE    "/sch" // raw bytes
 
 #endif
 

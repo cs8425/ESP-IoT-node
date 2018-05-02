@@ -86,12 +86,13 @@ void setup() {
 	auth.setKey((uint8_t*)config.KEY.c_str());
 
 
-	// TODO: load from SPIFFS
-	for(uint8_t i=0; i<7; i++){
-		sch.SetDefaultMode(i, i, i+1);
-	}
-	pin.SetMode(15, 10, true);
+	// set default
+	sch.SetDefaultMode(DEF_ON_TIME, DEF_OFF_TIME);
+	pin.SetMode(DEF_ON_TIME, DEF_OFF_TIME, true);
 	pinMode(OUT_PIN, OUTPUT);
+
+	// load from SPIFFS
+	LoadSchedule(sch);
 
 
 	// don't wait, observe time changing when ntp timestamp is received
@@ -148,6 +149,8 @@ void printTm (const char* what, const tm* tm) {
 time_t now;
 uint32_t now_ms, now_us;
 uint32_t last_ms;
+
+uint32_t ext_cmd = 0;
 
 void loop() {
 
@@ -231,11 +234,30 @@ void loop() {
 			if (count >= 5) {
 				Serial.println("reset all config...");
 				config.Reset();
-				//ESP.restart();
+
+				SPIFFS.remove(SCHEDLE_FILE);
 			}
 		} else {
 			count = 0;
 		}
+	}
+
+	if (ext_cmd) {
+		switch (ext_cmd) {
+		case 1: // reboot
+			Serial.println("reboot...");
+			ESP.restart();
+			break;
+		case 2: // flush
+			Serial.println("flush...");
+			SaveSchedule(sch);
+			break;
+		case 3: // load
+			Serial.println("load...");
+			LoadSchedule(sch);
+			break;
+		}
+		ext_cmd = 0;
 	}
 }
 
@@ -310,6 +332,25 @@ void setupServer(AsyncWebServer& server) {
 		}
 
 		req->send(200, "text/plain", "ok");
+	});
+
+	server.on("/sys", HTTP_GET, [](AsyncWebServerRequest *req){
+		PARAM_CHECK("c");
+		unsigned c = PARAM_GET_INT("c");
+		// 0 : nop
+		// 1 : reboot
+		// 2 : flush schedule data to SPIFFS
+		// 3 : load schedule data from SPIFFS
+
+		bool ok = authCheck(req, auth);
+		if (!ok) {
+			WRET_AUTH_ERR(req);
+			return;
+		}
+
+		ext_cmd = c; // set event, and do in loop()
+
+		req->send(200, "text/plain", String(c));
 	});
 
 	server.on("/token", HTTP_GET, [](AsyncWebServerRequest *req){
@@ -510,5 +551,40 @@ void setupServer(AsyncWebServer& server) {
 		req->send(res);
 	});
 
+}
+
+void LoadSchedule(Scheduler& sch) {
+	if (!SPIFFS.exists(SCHEDLE_FILE)) return;
+	File f = SPIFFS.open(SCHEDLE_FILE, "r");
+	if (!f) return;
+
+	for (unsigned i=0; i<7; i++) {
+		mode m;
+		f.readBytes((char*) &m, sizeof(m));
+		sch.SetDefaultMode(i, m.on, m.off);
+	}
+
+	sch.Clear();
+	schedule d;
+	while(f.readBytes((char*) &d, sizeof(d))) {
+		int ret = sch.Add(d.start, d.end, d.m);
+		if (ret == -1) break;
+	}
+}
+
+void SaveSchedule(Scheduler& sch) {
+	File f = SPIFFS.open(SCHEDLE_FILE, "w+");
+	if (!f) return;
+
+	for(unsigned i=0; i<7; i++){
+		const mode* m = sch.GetDef(i);
+		f.write((uint8_t*) m, sizeof(mode));
+	}
+
+	unsigned count = sch.Count();
+	for(unsigned i=0; i<count; i++){
+		const schedule* data = sch.Get(i);
+		f.write((uint8_t*) data, sizeof(schedule));
+	}
 }
 

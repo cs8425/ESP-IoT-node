@@ -85,7 +85,7 @@ input {
 	color: #fff;
 }
 
-#settings div.btn {
+#settings div.btn, #schedule div.btn {
 	background-color: #727290;
 	color: white;
 	margin: .3em;
@@ -101,9 +101,6 @@ input {
 }
 
 .center {
-	margin: auto;
-	width: 50%;
-	padding: .8em;
 	text-align: center;
 }
 
@@ -143,19 +140,21 @@ input {
 }
 .table > div:nth-child(1) {
 	display: table-header-group;
+	cursor: pointer;
 	background-color: #4c7daf;
 	color: white;
 }
 .table.def > div:nth-child(1) {
 	background-color: #73540d;
-	color: white;
-	cursor: pointer;
 }
 .table > div > div {
 	display: table-cell;
 	padding-top: .8em;
 	padding-bottom: .8em;
 	padding: 1em;
+}
+.table > div[mid] {
+	cursor: pointer;
 }
 
 .sch > .table {

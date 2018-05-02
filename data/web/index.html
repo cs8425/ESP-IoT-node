@@ -26,7 +26,9 @@
 	</div>
 
 	<div class="block sch" id="schedule">
-
+		<hr/>
+		<div class="center"><div class="btn" do="load">Load Schedule</div><div class="btn" do="save">Save Schedule</div></div>
+		<hr/>
 		<div class="table def" id="sch-def">
 			<div><div>week</div> <div>w7</div> <div>w1</div> <div>w2</div> <div>w3</div> <div>w4</div> <div>w5</div> <div>w6</div></div>
 			<div><div>on</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div> <div>-</div></div>
@@ -48,8 +50,8 @@
 	</div>
 
 	<div class="block param" id="settings">
-		<div><div>Key:</div>&nbsp;<input type="password" id="key" /><div class="btn">Load from local</div><div class="btn">Save to local</div></div>
-		<div><div>New Key:</div>&nbsp;<input type="password" id="key2" /><div class="btn">generate new</div></div>
+		<div><div>Key:</div>&nbsp;<input type="password" id="key" /><div class="btn" do="load">Load from browser</div><div class="btn" do="save">Save to browser</div></div>
+		<div><div>New Key:</div>&nbsp;<input type="password" id="key2" /><div class="btn" do="new">generate new</div></div>
 		<div><div>WiFi Mode:</div>&nbsp;<div><select id="wifi-mode"><option value="3">AP+STA</option><option value="2">AP</option><option value="1">STA</option></select></div></div>
 		<div><div>WiFi AP SSID:</div>&nbsp;<input type="text" id="ap-ssid" placeholder="ESP..." /></div>
 		<div><div>WiFi AP Password:</div>&nbsp;<input type="password" id="ap-pwd" /></div>
