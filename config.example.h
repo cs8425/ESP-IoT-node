@@ -17,7 +17,7 @@
 
 #define AP_SSID         "esp"
 #define AP_PWD          "Aa123454321aA"
-#define AP_CHANNEL      1 // 0~14
+#define AP_CHANNEL      1 // 1~14
 #define AP_HIDDEN       0
 
 #define STA_SSID        "your_wifi_SSID"

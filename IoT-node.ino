@@ -86,6 +86,9 @@ void setup() {
 	pin.SetMode(DEF_ON_TIME, DEF_OFF_TIME, true);
 	pinMode(OUT_PIN, OUTPUT);
 
+	// LED for debug
+	pinMode(LED_BUILTIN, OUTPUT);
+
 	// load from SPIFFS
 	LoadSchedule(sch);
 
@@ -160,6 +163,7 @@ void loop() {
 		int o = pin.Update();
 		if (o != -1) {
 			digitalWrite(OUT_PIN, OUT_LOW_ACTIVE - o);
+			digitalWrite(LED_BUILTIN, 1 - o);
 		}
 
 		Serial.print("mode.on = ");
@@ -462,7 +466,7 @@ void setupServer(AsyncWebServer& server) {
 			return;
 		}
 
-		if(w <= 7) {
+		if(w < 7) {
 			sch.SetDefaultMode(w, on, of);
 		} else {
 			sch.SetDefaultMode(on, of);
