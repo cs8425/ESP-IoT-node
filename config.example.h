@@ -35,5 +35,7 @@
 #define KEY_FILE        "/key" // raw bytes
 #define SCHEDLE_FILE    "/sch" // raw bytes
 
+#define PWR_SLEEP_MS    8 // sleep for power saving
+
 #endif
 

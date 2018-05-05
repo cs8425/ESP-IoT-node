@@ -112,6 +112,7 @@ void setup() {
 		res->printf("heap:%u\n", ESP.getFreeHeap());
 		res->printf("url:%s\n", req->url().c_str());
 		res->printf("EspId:%x\n", ESP.getChipId());
+		res->printf("flashId:%x\n", ESP.getFlashChipId());
 		res->printf("CpuFreq:%x\n", ESP.getCpuFreqMHz());
 
 		req->send(res);
@@ -142,16 +143,18 @@ void printTm (const char* what, const tm* tm) {
 
 time_t now;
 uint32_t now_ms;
-uint32_t last_ms;
+uint32_t next_ms = 0;
 uint32_t ext_cmd = 0;
 
 void loop() {
 
-	now = time(nullptr);
 	now_ms = millis();
+	if (next_ms == 0) next_ms = now_ms;
+	if (now_ms - next_ms >= 1000) {
+		uint32_t dt = now_ms - next_ms;
+		next_ms = now_ms + 1000 - dt;
 
-	if(now_ms - last_ms > 1000){
-		last_ms = now_ms;
+		now = time(nullptr);
 
 
 		int sid = sch.Update(now);
@@ -244,6 +247,9 @@ void loop() {
 		}
 		ext_cmd = 0;
 	}
+
+	// 0 ~ 255
+	delay(config.PWR_SLEEP); // https://github.com/arendst/Sonoff-Tasmota/wiki/Energy-Saving
 }
 
 void setupServer(AsyncWebServer& server) {
@@ -257,7 +263,8 @@ void setupServer(AsyncWebServer& server) {
 		res->printf("\"ap\":\"%s\",", config.AP_ssid.c_str());
 		res->printf("\"ch\":%d,", config.AP_chan);
 		res->printf("\"hide\":%d,", config.AP_hidden);
-		res->printf("\"sta\":\"%s\"}", config.STA_ssid.c_str());
+		res->printf("\"sta\":\"%s\",", config.STA_ssid.c_str());
+		res->printf("\"pwr\":%d}", config.PWR_SLEEP);
 
 		req->send(res);
 	});
@@ -289,20 +296,28 @@ void setupServer(AsyncWebServer& server) {
 		String sta_ssid = readStringUntil(buf, '\n');
 		String sta_pwd = readStringUntil(buf, '\n');
 
+		int sleep = readStringUntil(buf, '\n').toInt();
+
 		String new_key = readStringUntil(buf, '\n');
 
 
 		if (mode >= 1 && mode <= 3) config.WiFi_mode = (WiFiMode_t) mode;
 
-		if (ap_ssid.length() > 0 && ap_ssid.length() < 32) config.AP_ssid = ap_ssid;
-		if (ap_pwd.length() >= 8 && ap_pwd.length() < 64) config.AP_pwd = ap_pwd;
+		if (ap_ssid.length() > 0 && ap_ssid.length() < 32) {
+			config.AP_ssid = ap_ssid;
+			if (ap_pwd.length() >= 8 && ap_pwd.length() < 64) config.AP_pwd = ap_pwd;
+		}
 
 		if (chan > 0 && chan <= 14) config.AP_chan = chan;
 
 		if (hidden >= 0 && hidden <= 1) config.AP_hidden = hidden;
 
-		if (sta_ssid.length() > 0 && sta_ssid.length() < 32) config.STA_ssid = sta_ssid;
-		if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) config.STA_pwd = sta_pwd;
+		if (sta_ssid.length() > 0 && sta_ssid.length() < 32) {
+			config.STA_ssid = sta_ssid;
+			if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) config.STA_pwd = sta_pwd;
+		}
+
+		if (sleep >= 0 && sleep <= 250) config.PWR_SLEEP = sleep;
 
 		config.Save();
 

@@ -16,12 +16,10 @@ void Mode::SetMode(uint16_t on, uint16_t off, bool force_reload) {
 }
 
 void Mode::SetMode(const mode* m, bool force_reload) {
-	reload.on = m->on;
-	reload.off = m->off;
+	reload = *m;
 
 	if(!force_reload) return;
-	temp.on = m->on;
-	temp.off = m->off;
+	temp = *m;
 
 	_status = 0;
 }
@@ -38,6 +36,7 @@ int Mode::Update() {
 			_status = 1;
 			return 1;
 		}
+		temp.on -=1;
 		_status = 1;
 		return 1;
 	break;

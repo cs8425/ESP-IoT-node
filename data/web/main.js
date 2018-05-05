@@ -143,6 +143,8 @@ function getSetting(cb) {
 		$('#ap-chan').val(o.ch)
 		$('#sta-ssid').val(o.sta)
 
+		$('#pwr-sleep').val(o.pwr)
+
 		if(typeof cb === "function") cb(o)
 	}})
 }
@@ -468,6 +470,7 @@ function init(){
 		var chan = parseInt($('#ap-chan').val()) || 1
 		var sta_ssid = $('#sta-ssid').val()
 		var sta_pwd = $('#sta-pwd').val()
+		var pwr_sleep = parseInt($('#pwr-sleep').val()) || 8
 
 		var new_key = $('#key2').val()
 		if (new_key != '') new_key = sha256.hex(new_key);
@@ -485,6 +488,8 @@ function init(){
 		param += hide + '\n'
 		param += sta_ssid + '\n'
 		param += sta_pwd + '\n'
+
+		param += pwr_sleep + '\n'
 
 		param += new_key + '\n'
 

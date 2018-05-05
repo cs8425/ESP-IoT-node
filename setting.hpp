@@ -10,8 +10,9 @@ class Settings {
 	public:
 		static String AP_ssid;
 		static String AP_pwd;
-		static int AP_chan;
 		static bool AP_hidden;
+		static int8_t AP_chan;
+		static int8_t PWR_SLEEP;
 
 		static String STA_ssid;
 		static String STA_pwd;
@@ -78,12 +79,17 @@ class Settings {
 			String sta_ssid = f->readStringUntil('\n');
 			String sta_pwd = f->readStringUntil('\n');
 			int mode = f->readStringUntil('\n').toInt();
+			int sleep = f->readStringUntil('\n').toInt();
 
-			if (ap_ssid.length() > 0 && ap_ssid.length() < 32) AP_ssid = ap_ssid;
-			if (ap_pwd.length() >= 8 && ap_pwd.length() < 64) AP_pwd = ap_pwd;
+			if (ap_ssid.length() > 0 && ap_ssid.length() < 32) {
+				AP_ssid = ap_ssid;
+				if (ap_pwd.length() >= 8 && ap_pwd.length() < 64) AP_pwd = ap_pwd;
+			}
 
-			if (sta_ssid.length() > 0 && sta_ssid.length() < 32) STA_ssid = sta_ssid;
-			if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) STA_pwd = sta_pwd;
+			if (sta_ssid.length() > 0 && sta_ssid.length() < 32) {
+				STA_ssid = sta_ssid;
+				if (sta_pwd.length() >= 8 && sta_pwd.length() < 64) STA_pwd = sta_pwd;
+			}
 
 			if ((chan > 0) && (chan <= 14) ){
 				AP_chan = chan;
@@ -93,6 +99,10 @@ class Settings {
 
 			if ((mode >= 1) && (mode <= 3) ){
 				WiFi_mode = (WiFiMode_t) mode;
+			}
+
+			if ((sleep >= 0) && (sleep <= 250) ){
+				PWR_SLEEP = sleep;
 			}
 
 			f->close();
@@ -110,6 +120,8 @@ class Settings {
 			f.printf("%s\n", STA_ssid.c_str());
 			f.printf("%s\n", STA_pwd.c_str());
 			f.printf("%d\n", WiFi_mode);
+
+			f.printf("%d\n", PWR_SLEEP);
 			f.close();
 			return 0;
 		}
@@ -135,13 +147,15 @@ class Settings {
 
 String Settings::AP_ssid = AP_SSID;
 String Settings::AP_pwd = AP_PWD;
-int Settings::AP_chan = AP_CHANNEL;
+int8_t Settings::AP_chan = AP_CHANNEL;
 bool Settings::AP_hidden = AP_HIDDEN;
 
 String Settings::STA_ssid = STA_SSID;
 String Settings::STA_pwd = STA_PWD;
 
 WiFiMode_t Settings::WiFi_mode = WIFI_MODE;
+
+int8_t Settings::PWR_SLEEP = PWR_SLEEP_MS;
 
 String Settings::KEY = "";
 
