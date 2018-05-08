@@ -37,5 +37,7 @@
 
 #define PWR_SLEEP_MS    8 // sleep for power saving
 
+#define RES_BUF_SIZE    536 // buffer size for ResponseStream
+
 #endif
 

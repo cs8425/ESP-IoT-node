@@ -96,7 +96,7 @@ void setup() {
 
 	// for debug
 	server.on("/dump", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/plain");
+		AsyncResponseStream *res = req->beginResponseStream("text/plain", RES_BUF_SIZE);
 		unsigned count = sch.Count();
 		const mode* m = sch.GetOutput();
 		int16_t mid = sch.GetModeId();
@@ -258,7 +258,7 @@ void setupServer(AsyncWebServer& server) {
 	server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *req){
 
 		// TODO: encrypt before send
-		AsyncResponseStream *res = req->beginResponseStream("text/json");
+		AsyncResponseStream *res = req->beginResponseStream("text/json", RES_BUF_SIZE);
 		res->printf("{\"mode\":%d,", config.WiFi_mode);
 		res->printf("\"ap\":\"%s\",", config.AP_ssid.c_str());
 		res->printf("\"ch\":%d,", config.AP_chan);
@@ -354,7 +354,7 @@ void setupServer(AsyncWebServer& server) {
 	});
 
 	server.on("/status", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/json");
+		AsyncResponseStream *res = req->beginResponseStream("text/json", RES_BUF_SIZE);
 		unsigned count = sch.Count();
 		const mode* m = sch.GetOutput();
 		int16_t mid = sch.GetModeId();
@@ -372,7 +372,7 @@ void setupServer(AsyncWebServer& server) {
 	});
 
 	server.on("/sch/ls", HTTP_GET, [](AsyncWebServerRequest *req){
-		AsyncResponseStream *res = req->beginResponseStream("text/json");
+		AsyncResponseStream *res = req->beginResponseStream("text/json", RES_BUF_SIZE);
 
 		res->printf("{\"def\":[\n");
 		for(unsigned i = 0; i < 7; i++){
@@ -490,9 +490,18 @@ void setupServer(AsyncWebServer& server) {
 	});
 
 	server.on("/log/all", HTTP_GET, [](AsyncWebServerRequest *req){
-		uint16_t* vars = new uint16_t[2];
+		uint16_t* vars = new(std::nothrow) uint16_t[2];
+		if (vars == nullptr) {
+			req->send(500);
+			return;
+		}
+
 		vars[0] = 0;
 		vars[1] = logs.Count();
+
+		req->onDisconnect([vars](){
+			delete vars; // free up allocated memory
+		});
 
 		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStreamChunked* res, size_t maxLen) {
 			size_t ret = 0;
@@ -511,12 +520,11 @@ void setupServer(AsyncWebServer& server) {
 					Serial.print(", res = ");
 					Serial.println((unsigned int)res, HEX);
 
-					delete vars;
 					res->end();
 					break;
 				}
 			}
-		});
+		}, RES_BUF_SIZE);
 
 		res->printf("%u\n", vars[1]);
 		req->send(res);
@@ -525,9 +533,18 @@ void setupServer(AsyncWebServer& server) {
 	server.on("/log", HTTP_GET, [](AsyncWebServerRequest *req){
 		PARAM_CHECK("c");
 
-		uint16_t* vars = new uint16_t[2];
+		uint16_t* vars = new(std::nothrow) uint16_t[2];
+		if (vars == nullptr) {
+			req->send(500);
+			return;
+		}
+
 		vars[0] = 0;
 		vars[1] = PARAM_GET_INT("c");
+
+		req->onDisconnect([vars](){
+			delete vars; // free up allocated memory
+		});
 
 		if(vars[1] > logs.Count()) vars[1] = logs.Count();
 
@@ -540,10 +557,9 @@ void setupServer(AsyncWebServer& server) {
 				res->printf("%d,%d,%d\n", data->temp, data->hum, data->press);
 				vars[0] += 1;
 			} else {
-				delete vars;
 				res->end();
 			}
-		});
+		}, RES_BUF_SIZE);
 		req->send(res);
 	});
 
