@@ -582,6 +582,8 @@ void LoadSchedule(Scheduler& sch) {
 		int ret = sch.Add(d.start, d.end, d.m);
 		if (ret == -1) break;
 	}
+
+	f.close();
 }
 
 void SaveSchedule(Scheduler& sch) {
@@ -598,5 +600,7 @@ void SaveSchedule(Scheduler& sch) {
 		const schedule* data = sch.Get(i);
 		f.write((uint8_t*) data, sizeof(schedule));
 	}
+
+	f.close();
 }
 

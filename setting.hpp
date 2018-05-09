@@ -58,19 +58,6 @@ class Settings {
 			return Parse(&f);
 		}
 
-		int LoadKey() {
-			if (!SPIFFS.exists(KEY_FILE)) return 0;
-			File f = SPIFFS.open(KEY_FILE, "r");
-			if (!f) return 2;
-
-			String key = f.readStringUntil('\n');
-			if (key.length() == 32) {
-				KEY = key;
-			}
-
-			return 0;
-		}
-
 		int Parse(File* f) {
 			String ap_ssid = f->readStringUntil('\n');
 			String ap_pwd = f->readStringUntil('\n');
@@ -122,6 +109,20 @@ class Settings {
 			f.printf("%d\n", WiFi_mode);
 
 			f.printf("%d\n", PWR_SLEEP);
+			f.close();
+			return 0;
+		}
+
+		int LoadKey() {
+			if (!SPIFFS.exists(KEY_FILE)) return 0;
+			File f = SPIFFS.open(KEY_FILE, "r");
+			if (!f) return 2;
+
+			String key = f.readStringUntil('\n');
+			if (key.length() == 32) {
+				KEY = key;
+			}
+
 			f.close();
 			return 0;
 		}
