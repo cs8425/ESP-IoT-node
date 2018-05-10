@@ -530,9 +530,17 @@ function init(){
 		case 'new':
 			$('#key2').attr('type','text').val(rndStr(12))
 			break
+		case 'set-url':
+			url = $('#url').val() || ''
+			if (url.endsWith('/')) url = url.substr(0, url.length-1)
+			localStorage.setItem('addr', url)
+			break
 		}
 	})
 	$('#key').val(localStorage.getItem('key'))
+
+	url = localStorage.getItem('addr') || ''
+	$('#url').val(url)
 
 	// log
 	var genChart = function(id, series, style) {
