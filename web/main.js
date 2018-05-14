@@ -77,11 +77,7 @@ function syscall(code, cb) {
 	});
 }
 
-var logs = {
-	temp: new TimeSeries(),
-	hum: new TimeSeries(),
-	press: new TimeSeries(),
-}
+var logs = {}
 
 var stEle = mkStatus()
 function mkStatus() {
@@ -548,6 +544,12 @@ function init(){
 		var canvas = document.getElementById(id);
 		chart.addTimeSeries(series, style);
 		chart.streamTo(canvas, 500);
+	}
+
+	logs = {
+		temp: new TimeSeries(),
+		hum: new TimeSeries(),
+		press: new TimeSeries(),
 	}
 
 	genChart('temp-chart', logs.temp, {lineWidth:2,strokeStyle:'#00ff00'})
