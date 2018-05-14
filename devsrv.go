@@ -140,7 +140,7 @@ func regzip() {
 	for {
 		reader.ReadString('\n')
 		Vln(1, "regenerate gzip...")
-		//genGz(*sdir, *dir)
+		genGz(*sdir, *dir)
 	}
 }
 
