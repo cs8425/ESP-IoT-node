@@ -21,7 +21,7 @@ function round2(i) {
 	var sub = n % 100
 	var out = sub
 	if (sub < 10) {out = "0" + out}
-	return Math.round(n / 100.0) + '.' + out
+	return Math.floor(n / 100.0) + '.' + out
 }
 
 function msg(hdr, str) {
@@ -118,10 +118,16 @@ function updateStatusEle(e, o) {
 		e.hum.text( round2(hum) )
 		e.press.text( round2(press) )
 
-		var now = new Date().getTime()
-		logs.temp.append(now, temp)
-		logs.hum.append(now, hum)
-		logs.press.append(now, press)
+		var t = new Date().getTime()
+
+		logs.temp.d.series[0].data.push({x:t, y:temp})
+		logs.temp.ch.update(logs.temp.d)
+
+		logs.hum.d.series[0].data.push({x:t, y:hum})
+		logs.hum.ch.update(logs.hum.d)
+
+		logs.press.d.series[0].data.push({x:t, y:press})
+		logs.press.ch.update(logs.press.d)
 	}
 }
 
@@ -539,22 +545,42 @@ function init(){
 	$('#url').val(url)
 
 	// log
-	var genChart = function(id, series, style) {
-		var chart = new SmoothieChart({responsive:true,millisPerPixel:1000,grid:{millisPerLine:300000},interpolation:'linear',tooltip:true,labels:{fontSize:12},timestampFormatter:SmoothieChart.timeFormatter});
-		var canvas = document.getElementById(id);
-		chart.addTimeSeries(series, style);
-		chart.streamTo(canvas, 500);
+	var formatTime = function(v) {
+		var t = new Date(v)
+		var hh = pand2(t.getHours())
+		var mm = pand2(t.getMinutes())
+		var ss = pand2(t.getSeconds())
+		return hh + ':' + mm + ':' + ss
+	}
+	var chartOption = {
+		fullWidth: true,
+		height: '30vh',
+		showPoint: false,
+		axisX:{
+			showGrid: false,
+			type: Chartist.FixedScaleAxis,
+			divisor: 5,
+			labelInterpolationFnc: formatTime
+		},
+		axisY:{
+			showGrid: true,
+			scaleMinSpace: 25,
+		},
+	}
+	var genChart = function(id, style) {
+		var obj = {}
+		obj.d = {
+			series: [{data:[]}],
+		}
+		obj.ch = new Chartist.Line('#' + id, obj.d, chartOption)
+		return obj
 	}
 
 	logs = {
-		temp: new TimeSeries(),
-		hum: new TimeSeries(),
-		press: new TimeSeries(),
+		temp: genChart('temp-chart'),
+		hum: genChart('hum-chart'),
+		press: genChart('press-chart'),
 	}
-
-	genChart('temp-chart', logs.temp, {lineWidth:2,strokeStyle:'#00ff00'})
-	genChart('hum-chart', logs.hum, {lineWidth:2,strokeStyle:'#0088ff',fillStyle:'rgba(0, 136, 255, 0.2)'})
-	genChart('press-chart', logs.press, {lineWidth:2,strokeStyle:'#00ff00',fillStyle:'rgba(0, 255, 0, 0.2)'})
 }
 
 function getLogs(cb) {
@@ -569,7 +595,7 @@ function getLogs(cb) {
 		var lines = obj.split('\n')
 		var count = parseInt(lines[0])
 		var now = new Date().getTime()
-		var l = []
+		var s = [[],[],[]]
 		for(var i=1; i<=count; i++) {
 			var d = lines[i].split(',')
 
@@ -578,13 +604,20 @@ function getLogs(cb) {
 			var press = (d[3] / 200.0) + 1013.0
 
 			var t = now - 60*1000*(count - i)
-
-			logs.temp.append(t, temp)
-			logs.hum.append(t, hum)
-			logs.press.append(t, press)
-			l.push([t, temp, hum, press])
+			s[0].push({x:t, y:temp})
+			s[1].push({x:t, y:hum})
+			s[2].push({x:t, y:press})
 		}
 		//console.log('/log/all', l)
+
+		logs.temp.d.series[0].data = s[0]
+		logs.temp.ch.update(logs.temp.d)
+
+		logs.hum.d.series[0].data = s[1]
+		logs.hum.ch.update(logs.hum.d)
+
+		logs.press.d.series[0].data = s[2]
+		logs.press.ch.update(logs.press.d)
 
 		if(typeof cb === "function") cb(l)
 	}})

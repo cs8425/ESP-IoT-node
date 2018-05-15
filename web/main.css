@@ -166,17 +166,13 @@ input {
 	background-color: #87e48a80;
 }
 
-canvas {
-	margin: .5em 0;
+#hum-chart .ct-series-a .ct-line {
+	stroke: #4abcde;
+	/*fill: #4abcdead;*/
 }
 
-div.smoothie-chart-tooltip {
-	background: #444;
-	padding: 1em;
-	margin-top: 20px;
-	font-family: consolas;
-	color: white;
-	font-size: 1em;
-	pointer-events: none;
+#press-chart .ct-series-a .ct-line {
+	stroke: #4a63dead;
+	/*fill: #4a63dead;*/
 }
 
