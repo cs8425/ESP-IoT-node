@@ -115,6 +115,7 @@ void setup() {
 		res->printf("flashId:%x\n", ESP.getFlashChipId());
 		res->printf("CpuFreq:%x\n", ESP.getCpuFreqMHz());
 
+		res->end();
 		req->send(res);
 	});
 
@@ -266,6 +267,7 @@ void setupServer(AsyncWebServer& server) {
 		res->printf("\"sta\":\"%s\",", config.STA_ssid.c_str());
 		res->printf("\"pwr\":%d}", config.PWR_SLEEP);
 
+		res->end();
 		req->send(res);
 	});
 	server.on("/setting", HTTP_POST, [](AsyncWebServerRequest *req){
@@ -368,6 +370,7 @@ void setupServer(AsyncWebServer& server) {
 		res->printf("\"log\":%u,", logs.Count());
 		res->printf("\"heap\":%u}", ESP.getFreeHeap());
 
+		res->end();
 		req->send(res);
 	});
 
@@ -392,6 +395,7 @@ void setupServer(AsyncWebServer& server) {
 		int16_t mid = sch.GetModeId();
 		res->printf("\"mid\":%d,\"count\":%u}\n", mid, count);
 
+		res->end();
 		req->send(res);
 	});
 
@@ -503,7 +507,7 @@ void setupServer(AsyncWebServer& server) {
 			delete vars; // free up allocated memory
 		});
 
-		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStreamChunked* res, size_t maxLen) {
+		AsyncResponseStream *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStream* res, size_t maxLen) {
 			size_t ret = 0;
 			uint16_t count = vars[1];
 
@@ -548,7 +552,7 @@ void setupServer(AsyncWebServer& server) {
 
 		if(vars[1] > logs.Count()) vars[1] = logs.Count();
 
-		AsyncResponseStreamChunked *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStreamChunked* res, size_t maxLen) {
+		AsyncResponseStream *res = req->beginResponseStreamChunked("text/plain", [vars](AsyncResponseStream* res, size_t maxLen) {
 			UNUSED(maxLen);
 			uint16_t count = vars[1];
 
