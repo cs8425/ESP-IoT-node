@@ -5,7 +5,7 @@ body {
 }
 
 div.block, hr {
-	margin: 1vw 1vw;
+	margin: 1vh .5vw;
 }
 
 
@@ -85,7 +85,7 @@ input {
 	color: #fff;
 }
 
-#settings div.btn, #schedule div.btn {
+#settings div.btn, #schedule div.btn, #logs div.btn {
 	background-color: #727290;
 	color: white;
 	margin: .3em;

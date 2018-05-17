@@ -78,6 +78,46 @@ function syscall(code, cb) {
 }
 
 var logs = {}
+var logs_rt = [[],[],[]]
+var logs_all = [[],[],[]]
+var log_type = 0
+var MAX_LOG = 60 * 60
+
+function setLogType(t) {
+	switch(t) {
+	case 1:
+		log_type = 1
+		logs.temp.d.series[0].data = logs_rt[0]
+		logs.hum.d.series[0].data = logs_rt[1]
+		logs.press.d.series[0].data = logs_rt[2]
+		break
+	default:
+		log_type = 0
+		logs.temp.d.series[0].data = logs_all[0]
+		logs.hum.d.series[0].data = logs_all[1]
+		logs.press.d.series[0].data = logs_all[2]
+	}
+	logs.temp.ch.update(logs.temp.d)
+	logs.hum.ch.update(logs.hum.d)
+	logs.press.ch.update(logs.press.d)
+}
+
+function appendRTLog(d) {
+	var len = (logs_rt.length < d.length) ? logs_rt.length: d.length
+	var t = new Date().getTime()
+
+	for(var i=0; i<len; i++) {
+		logs_rt[i].push({x:t, y:d[i]})
+		if(logs_rt[i].length > MAX_LOG) {
+			logs_rt[i].shift()
+		}
+	}
+	if(log_type == 1) {
+		logs.temp.ch.update(logs.temp.d)
+		logs.hum.ch.update(logs.hum.d)
+		logs.press.ch.update(logs.press.d)
+	}
+}
 
 var stEle = mkStatus()
 function mkStatus() {
@@ -118,16 +158,7 @@ function updateStatusEle(e, o) {
 		e.hum.text( round2(hum) )
 		e.press.text( round2(press) )
 
-		var t = new Date().getTime()
-
-		logs.temp.d.series[0].data.push({x:t, y:temp})
-		logs.temp.ch.update(logs.temp.d)
-
-		logs.hum.d.series[0].data.push({x:t, y:hum})
-		logs.hum.ch.update(logs.hum.d)
-
-		logs.press.d.series[0].data.push({x:t, y:press})
-		logs.press.ch.update(logs.press.d)
+		appendRTLog([temp, hum, press])
 	}
 }
 
@@ -554,7 +585,7 @@ function init(){
 	}
 	var chartOption = {
 		fullWidth: true,
-		height: '30vh',
+		height: '28vh',
 		showPoint: false,
 		axisX:{
 			showGrid: false,
@@ -581,6 +612,18 @@ function init(){
 		hum: genChart('hum-chart'),
 		press: genChart('press-chart'),
 	}
+	$('#logs > div > div.btn').on('click', function(e){
+		//console.log('log btn', $(this).attr('do'))
+		var act = $(this).attr('do')
+		switch (act) {
+		case 'rt':
+			setLogType(1)
+			break
+		case 'all':
+			setLogType(0)
+			break
+		}
+	})
 }
 
 function getLogs(cb) {
@@ -610,14 +653,8 @@ function getLogs(cb) {
 		}
 		//console.log('/log/all', l)
 
-		logs.temp.d.series[0].data = s[0]
-		logs.temp.ch.update(logs.temp.d)
-
-		logs.hum.d.series[0].data = s[1]
-		logs.hum.ch.update(logs.hum.d)
-
-		logs.press.d.series[0].data = s[2]
-		logs.press.ch.update(logs.press.d)
+		logs_all = s
+		setLogType(0)
 
 		if(typeof cb === "function") cb(l)
 	}})
