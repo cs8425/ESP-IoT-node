@@ -586,7 +586,7 @@ function init(){
 	var chartOption = {
 		fullWidth: true,
 		height: '28vh',
-		showPoint: false,
+		//showPoint: false,
 		axisX:{
 			showGrid: false,
 			type: Chartist.FixedScaleAxis,
@@ -597,6 +597,15 @@ function init(){
 			showGrid: true,
 			scaleMinSpace: 25,
 		},
+		plugins: [
+			Chartist.plugins.ctPointLabels({
+				labelFnc: function(d) {
+					var mod = Math.floor(d.series.data.length / 10)
+					mod = (mod == 0) ? 1 : mod
+					return (d.index % mod == 0) ? round2(d.value.y) : '';
+				}
+			})
+		]
 	}
 	var genChart = function(id, style) {
 		var obj = {}
@@ -604,6 +613,15 @@ function init(){
 			series: [{data:[]}],
 		}
 		obj.ch = new Chartist.Line('#' + id, obj.d, chartOption)
+		obj.ch.on('draw', function(ctx){
+			if (ctx.type === 'point') {
+				var mod = Math.floor(ctx.series.data.length / 10)
+				mod = (mod == 0) ? 1 : mod
+				if((ctx.index % mod) !== 0) {
+					ctx.element.remove()
+				}
+			}
+		})
 		return obj
 	}
 

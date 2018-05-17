@@ -100,7 +100,7 @@ func gzFiles(list []string, outpath string) {
 			continue
 		}
 
-		fds = append(fds, fi)
+		fds = append(fds, fi, strings.NewReader("\n"))
 	}
 
 	r := io.MultiReader(fds...)

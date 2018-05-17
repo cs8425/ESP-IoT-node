@@ -166,12 +166,12 @@ input {
 	background-color: #87e48a80;
 }
 
-#hum-chart .ct-series-a .ct-line {
+#hum-chart .ct-series-a .ct-line, #hum-chart .ct-series-a .ct-point {
 	stroke: #4abcde;
 	/*fill: #4abcdead;*/
 }
 
-#press-chart .ct-series-a .ct-line {
+#press-chart .ct-series-a .ct-line, #press-chart .ct-series-a .ct-point {
 	stroke: #4a63dead;
 	/*fill: #4a63dead;*/
 }
