@@ -81,7 +81,7 @@ var logs = {}
 var logs_rt = [[],[],[]]
 var logs_all = [[],[],[]]
 var log_type = 0
-var MAX_LOG = 60 * 60
+var MAX_LOG = 60 * 30
 
 function setLogType(t) {
 	switch(t) {
@@ -528,9 +528,12 @@ function init(){
 
 		console.log('param', param)
 		setSetting(param, function(o){
-			// update old key
-			$('#key').val($('#key2').val())
-			$('#key2').val('').attr('type','password')
+			var k2 = $('#key2')
+			if(k2.val() != '') {
+				// update old key
+				$('#key').val(k2.val())
+				k2.val('').attr('type','password')
+			}
 			getSetting()
 		})
 	})
@@ -586,11 +589,10 @@ function init(){
 	var chartOption = {
 		fullWidth: true,
 		height: '28vh',
-		//showPoint: false,
 		axisX:{
 			showGrid: false,
 			type: Chartist.FixedScaleAxis,
-			divisor: 5,
+			divisor: 10,
 			labelInterpolationFnc: formatTime
 		},
 		axisY:{

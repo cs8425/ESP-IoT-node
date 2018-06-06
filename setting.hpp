@@ -51,7 +51,7 @@ class Settings {
 		}
 
 		int LoadConfig() {
-			if (!SPIFFS.exists(CONFIG_FILE)) return 0;
+			if (!SPIFFS.exists(CONFIG_FILE)) return 1;
 			File f = SPIFFS.open(CONFIG_FILE, "r");
 			if (!f) return 1;
 
@@ -114,7 +114,7 @@ class Settings {
 		}
 
 		int LoadKey() {
-			if (!SPIFFS.exists(KEY_FILE)) return 0;
+			if (!SPIFFS.exists(KEY_FILE)) return 1;
 			File f = SPIFFS.open(KEY_FILE, "r");
 			if (!f) return 2;
 
