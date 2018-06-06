@@ -1,3 +1,6 @@
+/*
+   Simple http server for development and pack data to .gz
+*/
 package main
 
 import (
@@ -19,13 +22,6 @@ var port = flag.String("l", ":8080", "bind port")
 var dir = flag.String("d", "./data/web", "output dir")
 var sdir = flag.String("s", "./web", "source dir")
 
-func reqlog(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Vln(3, "[  ]", r.Method, r.URL, r.RemoteAddr)
-		next.ServeHTTP(w, r)
-	})
-}
-
 func trygz(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fpath := r.URL.Path
@@ -41,7 +37,9 @@ func trygz(next http.Handler) http.Handler {
 			r.URL.Path = fpath + ".gz"
 			w.Header().Set("Content-Type", ctype)
 			w.Header().Set("Content-Encoding", "gzip")
-			Vln(3, "[gz]", r.Method, r.URL)
+			Vln(3, "[gz]", r.Method, fpath, "->", r.URL, r.RemoteAddr)
+		} else {
+			Vln(3, "[  ]", r.Method, r.URL, r.RemoteAddr)
 		}
 		next.ServeHTTP(w, r)
 	})
@@ -57,6 +55,10 @@ func genGz(indir string, outdir string) {
 	jslist := make([]string, 0)
 	csslist := make([]string, 0)
 	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
 		name := file.Name()
 		fpath := filepath.Join(indir, name)
 
@@ -91,9 +93,9 @@ func genGz(indir string, outdir string) {
 }
 
 func gzFiles(list []string, outpath string) {
-	fds := make([]io.Reader, 0, len(list))
+	fds := make([]io.Reader, 0, len(list) * 2)
 	for _, fpath := range list {
-		Vln(5, "[gzFiles]", fpath)
+		Vln(5, "[gzFiles]", fpath, ">>", outpath)
 		fi, err := os.OpenFile(fpath, os.O_RDONLY, 0400)
 		if err != nil {
 			Vln(2, "[Err] gz input file err", fpath, err)
@@ -126,7 +128,7 @@ func main() {
 	genGz(*sdir, *dir)
 	go regzip()
 
-	http.Handle("/", trygz(reqlog(http.FileServer(http.Dir(*dir)))))
+	http.Handle("/", trygz(http.FileServer(http.Dir(*dir))))
 	err := http.ListenAndServe(*port, nil)
 	if err != nil {
 		Vln(0, err)
