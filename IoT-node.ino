@@ -41,6 +41,7 @@ Auth auth;
 AsyncWebServer server(80);
 
 Settings config;
+char chipid_buf[8];
 
 void setup() {
 	Serial.begin(115200);
@@ -60,6 +61,8 @@ void setup() {
 	Serial.printf("WiFi Mode = %d\n", config.WiFi_mode);
 	Serial.printf("AP_SSID = %s, channel = %d, hidden = %d\n", config.AP_ssid.c_str(), config.AP_chan, config.AP_hidden);
 	Serial.printf("STA_SSID = %s\n", config.STA_ssid.c_str());
+
+	sprintf(chipid_buf, "%08X", ESP.getChipId());
 
 	configTime(TZ_SEC, DST_SEC, "1.tw.pool.ntp.org", "1.asia.pool.ntp.org", "pool.ntp.org");
 
@@ -147,6 +150,10 @@ uint32_t now_ms;
 uint32_t next_ms = 0;
 uint32_t ext_cmd = 0;
 
+char temp_buf[7];
+char hum_buf[7];
+char press_buf[8];
+
 void loop() {
 
 	now_ms = millis();
@@ -197,19 +204,30 @@ void loop() {
 		int32_t temp = bme.readTemperatureInt();
 		int32_t hum = bme.readHumidityInt();
 		int32_t press = bme.readPressureInt();
-		Serial.printf("Temperature: %f C\n", temp / 100.0f);
+		/*Serial.printf("Temperature: %f C\n", temp / 100.0f);
 		Serial.printf("Humidity: %f %%\n", hum / 1024.0f);
-		Serial.printf("Pressure: %f hPa\n\n\n", press / 25600.0f);
+		Serial.printf("Pressure: %f hPa\n\n\n", press / 25600.0f);*/
 
 		newest_log.temp = (temp << 5) / 100;
 		newest_log.hum = (hum * 5) >> 7;
 		newest_log.press = (press >> 7) - 101300*2;
+
+		sprintf(temp_buf, "%3.2f\0", newest_log.temp / 32.0);
+		sprintf(hum_buf, "%3.2f\0", newest_log.hum / 40.0);
+		sprintf(press_buf, "%4.2f\0", (newest_log.press / 200.0) + 1013.0);
+		Serial.printf("temp_celsius %s\n", temp_buf);
+		Serial.printf("humidity_percent %s\n", hum_buf);
+		Serial.printf("pressure_hpa %s\n\n\n", press_buf);
 
 		static unsigned log_denom = 0;
 		if (log_denom == 0) {
 			//logs.Add(newest_log.temp, newest_log.hum, newest_log.press);
 			logs.Add(newest_log);
 			log_denom = 60;
+
+			/*sprintf(temp_buf, "%3.2f", newest_log.temp / 32.0);
+			sprintf(hum_buf, "%3.2f", newest_log.hum / 40.0);
+			sprintf(press_buf, "%4.2f", (newest_log.press / 200.0) + 1013.0);*/
 		}
 		log_denom--;
 	}
@@ -265,6 +283,7 @@ void setupServer(AsyncWebServer& server) {
 		res->printf("\"ch\":%d,", config.AP_chan);
 		res->printf("\"hide\":%d,", config.AP_hidden);
 		res->printf("\"sta\":\"%s\",", config.STA_ssid.c_str());
+		res->printf("\"tag\":\"%s\",", config.Tag.c_str());
 		res->printf("\"pwr\":%d}", config.PWR_SLEEP);
 
 		res->end();
@@ -302,6 +321,8 @@ void setupServer(AsyncWebServer& server) {
 
 		String new_key = readStringUntil(buf, '\n');
 
+		String new_tag = readStringUntil(buf, '\n');
+
 
 		if (mode >= 1 && mode <= 3) config.WiFi_mode = (WiFiMode_t) mode;
 
@@ -320,6 +341,10 @@ void setupServer(AsyncWebServer& server) {
 		}
 
 		if (sleep >= 0 && sleep <= 250) config.PWR_SLEEP = sleep;
+
+		if (new_tag.length() > 0 && new_tag.length() <= 20) {
+			config.Tag = new_tag;
+		}
 
 		config.Save();
 
@@ -564,6 +589,25 @@ void setupServer(AsyncWebServer& server) {
 				res->end();
 			}
 		}, RES_BUF_SIZE);
+		req->send(res);
+	});
+
+	server.on("/metrics", HTTP_GET, [](AsyncWebServerRequest *req){
+		AsyncResponseStream *res = req->beginResponseStream("text/plain; version=0.0.4", RES_BUF_SIZE);
+		res->addHeader("Server","ESP8266 IoT Server");
+
+		res->printf("# HELP temp_celsius The temperature of the node in Celsius.\n# TYPE temp_celsius gauge\n");
+		res->printf("temp_celsius{id=\"%s\",tag=\"%s\"} %s\n\n", chipid_buf, config.Tag.c_str(), temp_buf);
+
+		res->printf("# HELP humidity_percent The pressure of the node in %%.\n# TYPE humidity_percent gauge\n");
+		res->printf("humidity_percent{id=\"%s\",tag=\"%s\"} %s\n\n", chipid_buf, config.Tag.c_str(), hum_buf);
+
+		res->printf("# HELP pressure_hpa The pressure of the node in hPa.\n# TYPE pressure_hpa gauge\n");
+		res->printf("pressure_hpa{id=\"%s\",tag=\"%s\"} %s\n\n", chipid_buf, config.Tag.c_str(), press_buf);
+
+		res->printf("# TYPE uptime_seconds counter\nuptime_seconds{id=\"%s\",tag=\"%s\"} %d\n\n", chipid_buf, config.Tag.c_str(), millis()/1000);
+		res->printf("# TYPE heap_bytes gauge\nheap_bytes{id=\"%s\",tag=\"%s\"} %d\n\n", chipid_buf, config.Tag.c_str(), ESP.getFreeHeap());
+
 		req->send(res);
 	});
 

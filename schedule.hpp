@@ -4,9 +4,14 @@
 #include <stdint.h>
 #include <time.h>
 
+#include "config.h"
+
 #include "mode.hpp"
 
+//#define MAX_SCHEDLE_COUNT 168
+#ifndef MAX_SCHEDLE_COUNT
 #define MAX_SCHEDLE_COUNT 168
+#endif
 
 struct daytime {
 	// week 0~6

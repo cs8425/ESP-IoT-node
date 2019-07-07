@@ -21,6 +21,8 @@ class Settings {
 
 		static String KEY;
 
+		static String Tag;
+
 		Settings() {
 			SetKeyHex((uint8_t*)AES_KEY, sizeof(AES_KEY));
 		}
@@ -67,6 +69,7 @@ class Settings {
 			String sta_pwd = f->readStringUntil('\n');
 			int mode = f->readStringUntil('\n').toInt();
 			int sleep = f->readStringUntil('\n').toInt();
+			String tag = f->readStringUntil('\n');
 
 			if (ap_ssid.length() > 0 && ap_ssid.length() < 32) {
 				AP_ssid = ap_ssid;
@@ -92,6 +95,10 @@ class Settings {
 				PWR_SLEEP = sleep;
 			}
 
+			if (tag.length() > 0 && tag.length() <= 20) {
+				Tag = tag;
+			}
+
 			f->close();
 			return 0;
 		}
@@ -109,6 +116,8 @@ class Settings {
 			f.printf("%d\n", WiFi_mode);
 
 			f.printf("%d\n", PWR_SLEEP);
+
+			f.printf("%s\n", Tag.c_str());
 			f.close();
 			return 0;
 		}
@@ -159,6 +168,8 @@ WiFiMode_t Settings::WiFi_mode = WIFI_MODE;
 int8_t Settings::PWR_SLEEP = PWR_SLEEP_MS;
 
 String Settings::KEY = "";
+
+String Settings::Tag = TAG;
 
 #endif //__SETTING_HPP_
 

@@ -178,6 +178,8 @@ function getSetting(cb) {
 
 		$('#pwr-sleep').val(o.pwr)
 
+		$('#esp-tag').val(o.tag)
+
 		if(typeof cb === "function") cb(o)
 	}})
 }
@@ -504,6 +506,7 @@ function init(){
 		var sta_ssid = $('#sta-ssid').val()
 		var sta_pwd = $('#sta-pwd').val()
 		var pwr_sleep = parseInt($('#pwr-sleep').val()) || 8
+		var tag = $('#esp-tag').val()
 
 		var new_key = $('#key2').val()
 		if (new_key != '') new_key = sha256.hex(new_key);
@@ -511,6 +514,7 @@ function init(){
 		console.log('mode', wm)
 		console.log('AP', ap_ssid, ap_pwd, hide, chan)
 		console.log('STA', sta_ssid, sta_pwd)
+		console.log('tag', tag)
 
 		// TODO: dynamic Magic
 		var param = 'ESP23333\n'
@@ -525,6 +529,8 @@ function init(){
 		param += pwr_sleep + '\n'
 
 		param += new_key + '\n'
+
+		param += tag + '\n'
 
 		console.log('param', param)
 		setSetting(param, function(o){
