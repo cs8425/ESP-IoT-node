@@ -19,7 +19,7 @@ class Settings {
 
 		static WiFiMode_t WiFi_mode;
 
-		static String KEY;
+		static uint8_t KEY[sizeof(AES_KEY)/2];
 
 		static String Tag;
 
@@ -31,18 +31,12 @@ class Settings {
 			SetKeyHex((uint8_t*)hex.c_str(), hex.length());
 		}
 		void SetKeyHex(uint8_t* keyHex, size_t lenHex) {
-			String2 key = String2();
 			size_t len = lenHex / 2;
-			key.reserve(len);
-			key.SetLength(len);
-
 			unsigned i,j;
 			for (i=0, j=0; i<len; i++, j+=2) {
 				uint8_t c = hex2byte(keyHex[j]) << 4;
-				key.setCharAt(i, c | hex2byte(keyHex[j + 1]));
+				KEY[i] = c | hex2byte(keyHex[j + 1]);
 			}
-
-			KEY = key;
 		}
 
 		int Load() {
@@ -128,8 +122,8 @@ class Settings {
 			if (!f) return 2;
 
 			String key = f.readStringUntil('\n');
-			if (key.length() == 32) {
-				KEY = key;
+			if (key.length() == 64) {
+				SetKeyHex(key);
 			}
 
 			f.close();
@@ -140,7 +134,11 @@ class Settings {
 			File f = SPIFFS.open(KEY_FILE, "w+");
 			if (!f) return 1;
 
-			f.printf("%s\n", KEY.c_str());
+			unsigned i;
+			for (i=0; i<sizeof(KEY); i++) {
+				f.printf("%02x", KEY[i]);
+			}
+			f.printf("\n");
 			f.close();
 			return 0;
 		}
@@ -167,7 +165,7 @@ WiFiMode_t Settings::WiFi_mode = WIFI_MODE;
 
 int8_t Settings::PWR_SLEEP = PWR_SLEEP_MS;
 
-String Settings::KEY = "";
+uint8_t Settings::KEY[] = {0};
 
 String Settings::Tag = TAG;
 

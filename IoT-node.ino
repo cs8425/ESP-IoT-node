@@ -81,7 +81,7 @@ void setup() {
 			WiFi.softAP(config.AP_ssid.c_str(), config.AP_pwd.c_str(), config.AP_chan, config.AP_hidden);
 			break;
 	}
-	auth.setKey((uint8_t*)config.KEY.c_str());
+	auth.setKey(config.KEY);
 
 
 	// set default
@@ -351,7 +351,7 @@ void setupServer(AsyncWebServer& server) {
 		if (new_key.length() == 64) {
 			config.SetKeyHex(new_key);
 			config.SaveKey();
-			auth.setKey((uint8_t*)config.KEY.c_str());
+			auth.setKey(config.KEY);
 		}
 
 		req->send(200, "text/plain", "ok");
