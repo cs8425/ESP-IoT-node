@@ -34,11 +34,12 @@
 ////////////////////////////////////////////////////////
 
 #define CONFIG_FILE     "/config"
-#define KEY_FILE        "/key" // raw bytes
+#define KEY_FILE        "/key" // hex bytes
 #define SCHEDLE_FILE    "/sch" // raw bytes
 
 #define MAX_SCHEDLE_COUNT 24 // max schedule count
 #define MAX_LOG_COUNT (60*24) // max sensor log count
+#define LOG_DENOM 120 // log denom
 
 #define PWR_SLEEP_MS    8 // sleep for power saving
 

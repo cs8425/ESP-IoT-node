@@ -204,9 +204,6 @@ void loop() {
 		int32_t temp = bme.readTemperatureInt();
 		int32_t hum = bme.readHumidityInt();
 		int32_t press = bme.readPressureInt();
-		/*Serial.printf("Temperature: %f C\n", temp / 100.0f);
-		Serial.printf("Humidity: %f %%\n", hum / 1024.0f);
-		Serial.printf("Pressure: %f hPa\n\n\n", press / 25600.0f);*/
 
 		newest_log.temp = (temp << 5) / 100;
 		newest_log.hum = (hum * 5) >> 7;
@@ -223,7 +220,7 @@ void loop() {
 		if (log_denom == 0) {
 			//logs.Add(newest_log.temp, newest_log.hum, newest_log.press);
 			logs.Add(newest_log);
-			log_denom = 60;
+			log_denom = LOG_DENOM;
 
 			/*sprintf(temp_buf, "%3.2f", newest_log.temp / 32.0);
 			sprintf(hum_buf, "%3.2f", newest_log.hum / 40.0);

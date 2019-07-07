@@ -672,7 +672,8 @@ function getLogs(cb) {
 			var hum = d[2] / 40.0
 			var press = (d[3] / 200.0) + 1013.0
 
-			var t = now - 60*1000*(count - i)
+			//var t = now - 60*1000*(count - i)
+			var t = now - 120*1000*(count - i)
 			s[0].push({x:t, y:temp})
 			s[1].push({x:t, y:hum})
 			s[2].push({x:t, y:press})
